@@ -37,3 +37,6 @@ lerna-debug.log*
 # Cache
 .cache/
 .vite/
+
+# Claude Code local settings
+.claude/
