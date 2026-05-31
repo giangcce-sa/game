@@ -18,20 +18,18 @@ import { VIETNAM_CURRICULUM } from './context/VietnamCurriculum';
 import { Shield } from 'lucide-react';
 
 function AppContent() {
-  const { 
-    activeScreen, 
-    setActiveScreen, 
-    toastMessage, 
-    toastKind, 
+  const {
+    activeScreen,
+    setActiveScreen,
+    toastMessage,
+    toastKind,
     beep,
     isTimeOut,
-    resetTimer,
     changeTimeLimit,
-    
+
     // Primary school curriculum details
     studyMode,
     selectedGrade,
-    selectedUnit,
     completeUnit
   } = useGame();
 

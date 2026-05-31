@@ -127,7 +127,7 @@ export default function GameMemory({ onFinish, onBack }) {
             // Check level up condition: pass within limits
             const greatScore = nextMoves <= pairsCount + 3;
             let leveledUp = false;
-            if (memLevel < 5) {
+            if (greatScore && memLevel < 5) {
               levelUpGame('memLevel');
               leveledUp = true;
             }

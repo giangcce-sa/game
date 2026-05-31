@@ -30,6 +30,8 @@ export default function GameArcade({ onFinish, onBack }) {
   const spawnTimer = useRef(null);
   const gameTimer = useRef(null);
   const balloonIdCounter = useRef(0);
+  const targetWordRef = useRef(null);
+  const secondaryTargetRef = useRef(null);
 
   const getVocabPool = () => {
     const combined = getCombinedVocab();
@@ -50,13 +52,17 @@ export default function GameArcade({ onFinish, onBack }) {
     const pool = getVocabPool();
     const newTarget = pool[Math.floor(Math.random() * pool.length)];
     setTargetWord(newTarget);
+    targetWordRef.current = newTarget;
     speak(newTarget.w);
-    
+
     // Level 5 Double Target Mode
     if (arcLevel === 5) {
       const wrongs = pool.filter(v => v.w !== newTarget.w);
       const secondary = wrongs[Math.floor(Math.random() * wrongs.length)] || newTarget;
       setSecondaryTarget(secondary);
+      secondaryTargetRef.current = secondary;
+    } else {
+      secondaryTargetRef.current = null;
     }
   };
 
@@ -90,24 +96,27 @@ export default function GameArcade({ onFinish, onBack }) {
 
   const spawnBalloon = (config) => {
     const pool = getVocabPool();
-    
+    const currentTarget = targetWordRef.current;
+    const currentSecondary = secondaryTargetRef.current;
+    if (!currentTarget) return;
+
     // Choose correct balloon word or wrong balloon word
     const isCorrect = Math.random() < 0.48;
-    
+
     let item;
     if (isCorrect) {
       // For level 5, could be either primary or secondary target
-      if (arcLevel === 5 && secondaryTarget) {
-        item = Math.random() < 0.5 ? targetWord : secondaryTarget;
+      if (arcLevel === 5 && currentSecondary) {
+        item = Math.random() < 0.5 ? currentTarget : currentSecondary;
       } else {
-        item = targetWord;
+        item = currentTarget;
       }
     } else {
-      const filterWords = arcLevel === 5 
-        ? pool.filter(v => v.w !== targetWord.w && v.w !== secondaryTarget?.w)
-        : pool.filter(v => v.w !== targetWord.w);
-      
-      item = filterWords[Math.floor(Math.random() * filterWords.length)] || targetWord;
+      const filterWords = arcLevel === 5
+        ? pool.filter(v => v.w !== currentTarget.w && v.w !== currentSecondary?.w)
+        : pool.filter(v => v.w !== currentTarget.w);
+
+      item = filterWords[Math.floor(Math.random() * filterWords.length)] || currentTarget;
     }
 
     if (!item) return;
@@ -120,8 +129,8 @@ export default function GameArcade({ onFinish, onBack }) {
 
     // Check if correct
     const isBalloonCorrect = arcLevel === 5
-      ? (item.w === targetWord.w || item.w === secondaryTarget?.w)
-      : (item.w === targetWord.w);
+      ? (item.w === currentTarget.w || item.w === currentSecondary?.w)
+      : (item.w === currentTarget.w);
 
     const newBalloon = {
       id,

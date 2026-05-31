@@ -35,12 +35,9 @@ export default function StoryScreen() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [lockQuizClick, setLockQuizClick] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState([]);
-  
+
   // Celebration result state
   const [showTreasureClaim, setShowTreasureClaim] = useState(false);
-
-  // Background music state
-  const [ambientAudio, setAmbientAudio] = useState(false);
 
   // Cleanup autoplay timeout
   const clearAutoTimeout = () => {
@@ -50,7 +47,7 @@ export default function StoryScreen() {
     }
   };
 
-  // Cancel speech synthesis, cloud audio, and autoplay timer on unmount or when changing active story/page
+  // Cancel speech synthesis, cloud audio, and autoplay timer when changing active story or page
   useEffect(() => {
     return () => {
       clearAutoTimeout();
@@ -64,7 +61,7 @@ export default function StoryScreen() {
         window.activeCloudAudio = null;
       }
     };
-  }, [activeStory, currentPage, autoPlayMode]);
+  }, [activeStory, currentPage]);
 
   // Karaoke-style sentence reader helper
   const readPageKaraoke = (textToRead) => {
@@ -276,11 +273,6 @@ export default function StoryScreen() {
     "Bài Học Cuộc Sống 🌱": "linear-gradient(135deg, #11998e, #38ef7d)",
     "Cổ Tích VN 🌾": "linear-gradient(135deg, #f857a6, #ff5858)"
   };
-
-  // Diagnostic render logging
-  useEffect(() => {
-    console.log("StoryScreen mounted successfully with profile:", currentProfile?.name);
-  }, []);
 
   if (!currentProfile) return null;
 
@@ -762,7 +754,6 @@ export default function StoryScreen() {
     </div>
   );
   } catch (err) {
-    console.error("StoryScreen render error occurred:", err);
     return (
       <div style={{ padding: '24px', background: '#ffeef0', color: '#ff3b30', borderRadius: '20px', border: '3px solid #ff3b30', margin: '20px' }}>
         <h3 style={{ margin: '0 0 10px', fontSize: '1.4rem' }}>Lỗi Nạp Màn Hình Đọc Truyện 😢</h3>

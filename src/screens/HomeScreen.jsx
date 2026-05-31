@@ -166,7 +166,7 @@ export default function HomeScreen({ onSelectGame }) {
         }}
       >
         <Gift size={18} />
-        {hasClaimedDaily ? "✅ Bé đã nhận Rương Quà hôm nay rồi" : "🎁 Nhận Rương Quà May Mắn Hôm Hôm Nay!"}
+        {hasClaimedDaily ? "✅ Bé đã nhận Rương Quà hôm nay rồi" : "🎁 Nhận Rương Quà May Mắn Hôm Nay!"}
       </button>
 
       {/* Profile Info & Companion Pet */}
@@ -409,7 +409,6 @@ export default function HomeScreen({ onSelectGame }) {
       <div style={{ marginTop: '24px', textAlign: 'center' }}>
         <button 
           onClick={() => {
-            console.log("Click stories button! Setting activeScreen to 'stories'.");
             beep('sine');
             setActiveScreen('stories');
           }}

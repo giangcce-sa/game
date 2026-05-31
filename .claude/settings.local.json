@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git branch *)",
+      "Bash(git -c user.email=dev@local -c user.name=Developer commit -m \"Initial commit: English learning game for Vietnamese kids\")",
+      "Bash(npx vite *)",
+      "Bash(git -c user.email=dev@local -c user.name=Developer add -A)",
+      "Bash(git -c user.email=dev@local -c user.name=Developer commit -m \"Fix bugs: typo, GameMemory level-up gate, GameArcade stale closure, cleanup debug\")"
+    ]
+  }
+}
