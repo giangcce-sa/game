@@ -3,7 +3,7 @@ import { useGame, MERCHANDISE } from '../context/GameContext';
 import { Lock, Shield, ArrowLeft, RefreshCw, Delete } from 'lucide-react';
 
 export default function ProfilesScreen() {
-  const { profiles, selectProfile, createProfile, beep, showToast } = useGame();
+  const { profiles, currentProfile, selectProfile, createProfile, setActiveScreen, beep, showToast } = useGame();
   const [isCreating, setIsCreating] = useState(false);
   const [name, setName] = useState('');
   const [age, setAge] = useState('mid');
@@ -399,7 +399,17 @@ export default function ProfilesScreen() {
 
   /* ==================== PREMIUM PROFILES SELECTION DASHBOARD ==================== */
   return (
-    <div className="profile-box" style={{ maxWidth: '540px', margin: '40px auto 0', padding: '28px 22px' }}>
+    <div className="profile-box" style={{ maxWidth: '540px', margin: '40px auto 0', padding: '28px 22px', position: 'relative' }}>
+      {currentProfile && (
+        <button
+          className="back-btn"
+          onClick={() => { beep('sine'); setActiveScreen('home'); }}
+          style={{ position: 'absolute', top: 14, left: 14, margin: 0 }}
+        >
+          <ArrowLeft size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+          Quay lại
+        </button>
+      )}
       <div className="big" style={{ fontSize: '4.6rem', marginBottom: '10px', animation: 'bob 2s ease-in-out infinite' }}>🦉</div>
       <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--c-purple)' }}>Vương Quốc Tiếng Anh</h2>
       <p style={{ color: '#6b6391', fontWeight: 600, fontSize: '0.92rem', margin: '0 0 10px' }}>
