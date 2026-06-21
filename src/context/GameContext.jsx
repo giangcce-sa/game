@@ -467,29 +467,45 @@ export const GameProvider = ({ children }) => {
   // Called after pulling from Supabase on login so multi-device data converges.
   const mergeCloudProfiles = useCallback((cloudProfiles) => {
     if (!Array.isArray(cloudProfiles) || cloudProfiles.length === 0) return;
-    setProfiles(localProfiles => {
-      const byId = new Map((localProfiles || []).map(p => [p.id, p]));
-      for (const cloud of cloudProfiles) {
-        if (!cloud?.id) continue;
-        const local = byId.get(cloud.id);
-        if (!local) { byId.set(cloud.id, cloud); continue; }
-        const localTs = Date.parse(local.updatedAt || 0) || 0;
-        const cloudTs = Date.parse(cloud.updatedAt || 0) || 0;
-        // Merge defaults so newly added fields never come back undefined
-        byId.set(cloud.id, cloudTs > localTs
-          ? { ...profileDefaults, ...cloud }
-          : { ...profileDefaults, ...local });
-      }
-      const merged = Array.from(byId.values());
-      localStorage.setItem(DB_KEY, JSON.stringify(merged));
-      // Refresh the active profile reference if it was updated from cloud
-      setCurrentProfile(cur => {
-        if (!cur) return cur;
-        const fresh = merged.find(p => p.id === cur.id);
-        return fresh || cur;
-      });
-      return merged;
-    });
+
+    let localProfiles = [];
+    try { localProfiles = JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch {}
+
+    const byId = new Map((localProfiles || []).map(p => [p.id, p]));
+    // Drop the auto-generated offline default once the user has real cloud
+    // profiles, so a signed-in user never inherits the shared "p_default".
+    byId.delete('p_default');
+
+    for (const cloud of cloudProfiles) {
+      if (!cloud?.id) continue;
+      const local = byId.get(cloud.id);
+      if (!local) { byId.set(cloud.id, { ...profileDefaults, ...cloud }); continue; }
+      const localTs = Date.parse(local.updatedAt || 0) || 0;
+      const cloudTs = Date.parse(cloud.updatedAt || 0) || 0;
+      // Merge defaults so newly added fields never come back undefined
+      byId.set(cloud.id, cloudTs > localTs
+        ? { ...profileDefaults, ...cloud }
+        : { ...profileDefaults, ...local });
+    }
+
+    const merged = Array.from(byId.values());
+    localStorage.setItem(DB_KEY, JSON.stringify(merged));
+    setProfiles(merged);
+
+    // Activate a cloud profile so the signed-in user sees their own data.
+    const cloudIds = new Set(cloudProfiles.map(c => c.id));
+    const target = merged.find(p => cloudIds.has(p.id)) || merged[0];
+    if (target) {
+      setCurrentProfile(target);
+      applySkin(target.equippedSkin);
+      setCustomVocab(target.customVocab || []);
+      setLearningAnalytics(target.analytics || {});
+      setCompletedUnits(target.completedUnits || []);
+      setReadStories(target.readStories || []);
+      setSelectedGrade(target.selectedGrade || 'grade3');
+      initializeDailyQuests(target.id);
+      initializeWeeklyChallenge(target.id);
+    }
   }, []);
 
   const applySkin = (skinId) => {
