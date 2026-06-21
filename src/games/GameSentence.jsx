@@ -14,6 +14,9 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
   const [round, setRound] = useState(0);
   const [lives, setLives] = useState(3);
   const [correctCount, setCorrectCount] = useState(0);
+  // Shuffled subset of units for this play session, so rounds vary each time
+  // instead of always using the first 5 units in order.
+  const [playlist, setPlaylist] = useState([]);
   
   const [targetSentence, setTargetSentence] = useState('');
   const [vietnameseMeaning, setVietnameseMeaning] = useState('');
@@ -26,10 +29,10 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
 
   const totalRounds = curriculumData ? Math.min(curriculumData.length, 5) : 5;
 
-  const startRound = (roundIdx) => {
-    if (!curriculumData || !curriculumData[roundIdx]) return;
-    
-    const data = curriculumData[roundIdx];
+  const startRound = (roundIdx, list = playlist) => {
+    if (!list || !list[roundIdx]) return;
+
+    const data = list[roundIdx];
     const sentence = data.sentence; // e.g. "What is your name?"
     
     // Auto translate meaning for visual aids
@@ -80,7 +83,12 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
   };
 
   useEffect(() => {
-    startRound(0);
+    if (!curriculumData || curriculumData.length === 0) return;
+    // Shuffle all units and take the first `totalRounds` for this session
+    const shuffled = [...curriculumData].sort(() => 0.5 - Math.random());
+    setPlaylist(shuffled);
+    setRound(0);
+    startRound(0, shuffled);
   }, [curriculumData]);
 
   const handleWordClick = (wordObj) => {
