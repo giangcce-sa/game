@@ -13,17 +13,39 @@ const QUESTIONS = [
   { type: 'fill', sentence: 'She ___ English very well.', options: ['speak', 'speaks', 'speaking', 'spoke'], answer: 1 },
   { type: 'fill', sentence: 'The cat ___ on the mat.', options: ['sit', 'sits', 'sitting', 'sat'], answer: 1 },
   { type: 'fill', sentence: 'They ___ happy today.', options: ['is', 'are', 'am', 'be'], answer: 1 },
+  { type: 'fill', sentence: 'My brother ___ TV in the evening.', options: ['watch', 'watches', 'watching', 'watched'], answer: 1 },
+  { type: 'fill', sentence: 'There ___ a book on the desk.', options: ['is', 'are', 'am', 'be'], answer: 0 },
+  { type: 'fill', sentence: 'There ___ many stars in the sky.', options: ['is', 'are', 'am', 'be'], answer: 1 },
+  { type: 'fill', sentence: 'I ___ my homework yesterday.', options: ['do', 'does', 'did', 'doing'], answer: 2 },
+  { type: 'fill', sentence: 'She is ___ than her sister.', options: ['tall', 'taller', 'tallest', 'more tall'], answer: 1 },
+  { type: 'fill', sentence: 'This is ___ apple.', options: ['a', 'an', 'the', 'some'], answer: 1 },
+  { type: 'fill', sentence: 'We will go ___ the park tomorrow.', options: ['to', 'at', 'in', 'on'], answer: 0 },
+  { type: 'fill', sentence: 'Look! The dog ___ running fast.', options: ['is', 'are', 'am', 'be'], answer: 0 },
+  { type: 'fill', sentence: 'My birthday is ___ May.', options: ['at', 'on', 'in', 'to'], answer: 2 },
+  { type: 'fill', sentence: 'Can you ___ the piano?', options: ['play', 'plays', 'playing', 'played'], answer: 0 },
+  { type: 'fill', sentence: 'These ___ my new shoes.', options: ['is', 'are', 'am', 'was'], answer: 1 },
 
   // sentence-order
   { type: 'order', words: ['play', 'I', 'football', 'every', 'day'], correctOrder: 'I play football every day' },
   { type: 'order', words: ['is', 'cat', 'the', 'big'], correctOrder: 'the cat is big' },
   { type: 'order', words: ['she', 'apples', 'likes'], correctOrder: 'she likes apples' },
   { type: 'order', words: ['school', 'go', 'we', 'to'], correctOrder: 'we go to school' },
+  { type: 'order', words: ['my', 'is', 'this', 'book'], correctOrder: 'this is my book' },
+  { type: 'order', words: ['can', 'I', 'swim'], correctOrder: 'I can swim' },
+  { type: 'order', words: ['the', 'sky', 'is', 'blue'], correctOrder: 'the sky is blue' },
+  { type: 'order', words: ['dog', 'a', 'have', 'I'], correctOrder: 'I have a dog' },
+  { type: 'order', words: ['are', 'you', 'how'], correctOrder: 'how are you' },
+  { type: 'order', words: ['she', 'happy', 'is', 'today'], correctOrder: 'she is happy today' },
 
   // error-correction
   { type: 'error', sentence: 'She go to school.', options: ['She goes to school.', 'She going to school.', 'She gone to school.', 'She went to school.'], answer: 0, errorWord: 'go' },
   { type: 'error', sentence: 'They is my friends.', options: ['They are my friends.', 'They am my friends.', 'They was my friends.', 'They be my friends.'], answer: 0, errorWord: 'is' },
   { type: 'error', sentence: 'I has a dog.', options: ['I have a dog.', 'I had a dog.', 'I having a dog.', 'I haved a dog.'], answer: 0, errorWord: 'has' },
+  { type: 'error', sentence: 'He don\'t like fish.', options: ["He doesn't like fish.", "He not like fish.", "He didn't likes fish.", "He don't likes fish."], answer: 0, errorWord: "don't" },
+  { type: 'error', sentence: 'We is playing now.', options: ['We are playing now.', 'We am playing now.', 'We be playing now.', 'We was playing now.'], answer: 0, errorWord: 'is' },
+  { type: 'error', sentence: 'She have two cats.', options: ['She has two cats.', 'She haves two cats.', 'She having two cats.', 'She had two cat.'], answer: 0, errorWord: 'have' },
+  { type: 'error', sentence: 'I am go to the zoo.', options: ['I am going to the zoo.', 'I am goes to the zoo.', 'I am gone to the zoo.', 'I am went to the zoo.'], answer: 0, errorWord: 'go' },
+  { type: 'error', sentence: 'There is many books.', options: ['There are many books.', 'There am many books.', 'There be many books.', 'There was many books.'], answer: 0, errorWord: 'is' },
 ];
 
 const TOTAL_ROUNDS = 10;
