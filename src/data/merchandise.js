@@ -90,3 +90,14 @@ export const QUEST_POOL = [
   { type: "memory_match",   text: "Tìm cặp đúng 4 lần trong Lật Thẻ Trí Nhớ 🃏",          target: 4, rewardStars: 20, rewardCoins: 6  },
   { type: "arena_win",      text: "Đánh bại Cú Cốc Cốc AI trong Cú Đối Đầu 🦉⚡",         target: 1, rewardStars: 35, rewardCoins: 12 },
 ];
+
+// Weekly challenges — bigger targets, richer rewards. One challenge per week per child.
+// Reuses the same updateQuestProgress event types as daily quests.
+export const WEEKLY_CHALLENGE_POOL = [
+  { type: "picture_correct", text: "Trả lời đúng 30 từ đoán hình trong tuần 🖼️",       target: 30, rewardStars: 120, rewardCoins: 60 },
+  { type: "speech",          text: "Phát âm đúng 20 từ bằng Micro trong tuần 🎙️",      target: 20, rewardStars: 150, rewardCoins: 70 },
+  { type: "memory_match",    text: "Tìm cặp đúng 25 lần trong Lật Thẻ Trí Nhớ 🃏",      target: 25, rewardStars: 120, rewardCoins: 60 },
+  { type: "write_correct",   text: "Gõ đúng chính tả 20 từ vựng trong tuần ✏️",        target: 20, rewardStars: 140, rewardCoins: 65 },
+  { type: "story",           text: "Đọc xong 5 câu truyện song ngữ trong tuần 📖",      target: 5,  rewardStars: 160, rewardCoins: 80 },
+];
+

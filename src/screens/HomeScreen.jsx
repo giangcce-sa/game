@@ -4,6 +4,7 @@ import { VIETNAM_CURRICULUM } from '../context/VietnamCurriculum';
 import { Sparkles, Gift, Trophy, Store, Shield, Eye, BookOpen, Lock, Unlock, Heart, Award, Zap } from 'lucide-react';
 import FeatureCards from './HomeScreen/FeatureCards';
 import QuestWidget from './HomeScreen/QuestWidget';
+import WeeklyChallengeWidget from './HomeScreen/WeeklyChallengeWidget';
 import StreakTree from './HomeScreen/StreakTree';
 import FriendsModal from './HomeScreen/FriendsModal';
 import DailyStoryWidget from './HomeScreen/DailyStoryWidget';
@@ -647,6 +648,9 @@ export default function HomeScreen({ onSelectGame, onOpenChat }) {
       <FeatureCards />
 
       <QuestWidget />
+
+      <WeeklyChallengeWidget />
+
 
       {/* MODE TABS: FREE PLAY OR SGK PROGRAM */}
       <div className="store-tabs" style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.06)', padding: '5px', borderRadius: '16px', marginBottom: '18px' }}>

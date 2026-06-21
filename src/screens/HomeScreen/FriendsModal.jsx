@@ -109,6 +109,41 @@ export default function FriendsModal({ onClose }) {
           </button>
         </form>
 
+        {/* Shared group goal — sum of everyone's weekly stars vs a per-member target */}
+        {entries.length >= 2 && (() => {
+          const totalStars = entries.reduce((s, e) => s + (e.weeklyStars || 0), 0);
+          const goal = entries.length * 100; // 100 sao/tuần mỗi thành viên
+          const pct = Math.min(100, Math.round((totalStars / goal) * 100));
+          const reached = totalStars >= goal;
+          return (
+            <div style={{
+              background: reached ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#fef3c7,#fff7ed)',
+              border: `2px solid ${reached ? '#16a34a' : '#f59e0b'}`,
+              borderRadius: 16, padding: '12px 14px', marginBottom: 14,
+              color: reached ? '#fff' : 'var(--ink)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 900 }}>
+                  🤝 Mục tiêu chung cả nhóm
+                </span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 900, color: reached ? '#fff' : '#f59e0b' }}>
+                  {reached ? 'Đạt rồi! 🎉' : `${totalStars}/${goal} ⭐`}
+                </span>
+              </div>
+              <div style={{ height: 10, background: 'rgba(0,0,0,0.12)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${pct}%`, height: '100%',
+                  background: reached ? 'rgba(255,255,255,0.9)' : 'linear-gradient(90deg,#fde047,#f59e0b)',
+                  borderRadius: 6, transition: 'width 0.5s',
+                }} />
+              </div>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, margin: '6px 0 0', opacity: 0.85 }}>
+                Cả nhóm cùng nhặt sao để đạt mục tiêu tuần này nhé!
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Leaderboard */}
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

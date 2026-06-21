@@ -81,7 +81,8 @@ export default function GameMemory({ onFinish, onBack }) {
       title: "Hết Giờ Mất Rồi! 😢",
       msg: `Bé đã không kịp hoàn thành lật thẻ trong 50 giây. Cố gắng lên nhé!`,
       stars: matchedCount * 8,
-      coins: matchedCount * 3
+      coins: matchedCount * 3,
+      scorePct: pairsCount > 0 ? Math.round((matchedCount / pairsCount) * 100) : 0,
     });
   };
 
@@ -136,7 +137,8 @@ export default function GameMemory({ onFinish, onBack }) {
               title: greatScore ? "Trí Nhớ Siêu Phàm!" : "Ghép Thành Công!",
               msg: `Bé đã lật thành công trong ${nextMoves} lượt. ${leveledUp ? 'Bé đã thăng cấp độ khó mới!' : ''}`,
               stars: pairsCount * 8,
-              coins: pairsCount * 3
+              coins: pairsCount * 3,
+              scorePct: 100,
             });
           } else if (isOutofMoves) {
             // Out of moves despite matching this correct pair
@@ -173,7 +175,8 @@ export default function GameMemory({ onFinish, onBack }) {
       title: "Hết Lượt Lật Mất Rồi! 🥺",
       msg: `Bé đã lật hết tối đa ${maxMoves} lượt. Hãy thử lại để có kết quả tốt hơn nhé!`,
       stars: currentMatched * 8,
-      coins: currentMatched * 3
+      coins: currentMatched * 3,
+      scorePct: pairsCount > 0 ? Math.round((currentMatched / pairsCount) * 100) : 0,
     });
   };
 

@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { ArrowLeft, Sparkles, Volume2, Mic, Play, Square, Award, AlertCircle } from 'lucide-react';
 import IpaDisplay from '../components/IpaDisplay';
+import { scorePronunciation, pctToStars } from '../lib/pronunciationScore';
+import { getWeakPhonemes } from '../lib/adaptive';
+import { getPhoneme } from '../lib/phonics';
+
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const STUDIO_SENTENCES = [
   "Hello! How are you today?",
@@ -27,17 +32,20 @@ export default function GameSpeechStudio() {
     isSpeechSupported,
     startListeningSpeech,
     stopListeningSpeech,
-    updateQuestProgress
+    updateQuestProgress,
+    recordPronunciation,
   } = useGame();
 
   const [activeSentenceIdx, setActiveSentenceIdx] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPlayingRecord, setIsPlayingRecord] = useState(false);
-  const [score, setScore] = useState(null); // null | 2 | 3 | 'undetected'
-  const [speechMatchText, setSpeechMatchText] = useState('');
+  const [score, setScore] = useState(null); // null | 1 | 2 | 3 | 'undetected'
+  const [result, setResult] = useState(null); // { overall, matched, total, words:[{word,ok}] }
   const [selectedWord, setSelectedWord] = useState(null);
+  const [tip, setTip] = useState(null); // Vietnamese pronunciation tip for weakest phoneme
   const evalTimerRef = useRef(null);
+  const gotResultRef = useRef(false);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -51,7 +59,8 @@ export default function GameSpeechStudio() {
     setActiveSentenceIdx(idx);
     setAudioUrl(null);
     setScore(null);
-    setSpeechMatchText('');
+    setResult(null);
+    setTip(null);
     if (playbackAudioRef.current) {
       playbackAudioRef.current.pause();
       playbackAudioRef.current = null;
@@ -63,7 +72,9 @@ export default function GameSpeechStudio() {
       beep('sine');
       setAudioUrl(null);
       setScore(null);
-      setSpeechMatchText('');
+      setResult(null);
+      setTip(null);
+      gotResultRef.current = false;
       audioChunksRef.current = [];
 
       // Request microphone access
@@ -83,24 +94,30 @@ export default function GameSpeechStudio() {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
-
-        // Fun evaluation of pronunciation
-        evaluateSpeech();
+        // If recognition never returned, fall back to honest "undetected"
+        evaluateFallback();
       };
 
-      // Start standard Speech Recognition in the background for real matching if supported
+      // Real per-word scoring from the speech recognizer's transcript.
+      // skipPhonics: we record per-word ourselves below (target here is a full sentence).
       if (isSpeechSupported) {
-        startListeningSpeech(
-          activeSentence,
-          (transcript) => {
-            setSpeechMatchText(`Khớp 90%: "${transcript}"`);
-            setScore(3);
-          },
-          (transcript) => {
-            setSpeechMatchText(`Khớp 50%: "${transcript}"`);
-            setScore(2);
-          }
-        );
+        const handleTranscript = (transcript) => {
+          gotResultRef.current = true;
+          const r = scorePronunciation(activeSentence, transcript);
+          setResult(r);
+          setScore(pctToStars(r.overall));
+          // Feed the per-word phonics tracker honestly
+          r.words.forEach(w => recordPronunciation(w.word, w.ok));
+          // Reward scales with accuracy; always a little for trying
+          const stars = 5 + Math.round((r.overall / 100) * 15); // 5..20
+          const coins = 2 + Math.round((r.overall / 100) * 8);  // 2..10
+          beep(r.overall >= 50 ? 'good' : 'sine');
+          addStarsAndCoins(stars, coins, r.overall >= 50);
+          if (updateQuestProgress) updateQuestProgress('speech', 1);
+          // Offer a pronunciation tip when not perfect
+          if (r.overall < 100) maybeShowTip();
+        };
+        startListeningSpeech(activeSentence, handleTranscript, handleTranscript, { skipPhonics: true });
       }
 
       mediaRecorder.start();
@@ -129,18 +146,62 @@ export default function GameSpeechStudio() {
     setIsRecording(false);
   };
 
-  const evaluateSpeech = () => {
+  const evaluateFallback = () => {
     if (evalTimerRef.current) clearTimeout(evalTimerRef.current);
     evalTimerRef.current = setTimeout(() => {
-      setScore(prev => {
-        if (prev !== null) return prev;
-        // No speech recognition result — honest fallback
-        return isSpeechSupported ? 'undetected' : 'undetected';
-      });
-      beep('good');
-      addStarsAndCoins(10, 4, true);
+      if (gotResultRef.current) return; // recognizer already scored — nothing to do
+      setScore('undetected');
+      // Small consolation reward for trying, even when we couldn't hear clearly
+      addStarsAndCoins(5, 2, false);
       if (updateQuestProgress) updateQuestProgress('speech', 1);
-    }, 1000);
+    }, 1200);
+  };
+
+  // Offline-first pronunciation tip: show the child's weakest tracked phoneme
+  // immediately, then try to enrich with an AI tip (text endpoint) if reachable.
+  const maybeShowTip = () => {
+    const weak = getWeakPhonemes(currentProfile?.phonicsStats || {});
+    if (weak.length === 0) return;
+    const ph = getPhoneme(weak[0].id);
+    if (!ph) return;
+    // Instant, reliable offline tip
+    setTip({ symbol: ph.symbol, text: `Âm ${ph.symbol} (${ph.examples}): ${ph.vi_tip}`, source: 'local' });
+
+    // Best-effort AI enrichment (text-only endpoint). Never blocks the UI.
+    if (!API_BASE) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [{
+              role: 'user',
+              content: `Một bé Việt Nam đang học tiếng Anh phát âm chưa chuẩn âm ${ph.symbol} (ví dụ: ${ph.examples}). Cho một mẹo luyện phát âm thật ngắn, vui, dễ hiểu cho trẻ em bằng tiếng Việt, tối đa 1 câu.`,
+            }],
+          }),
+        });
+        if (!res.ok || !res.body) return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let acc = '', done = false;
+        while (!done) {
+          const { value, done: d } = await reader.read(); done = d;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n')) {
+              const t = line.trim();
+              if (!t.startsWith('data:')) continue;
+              const payload = t.slice(5).trim();
+              if (payload === '[DONE]') { done = true; break; }
+              try { acc += JSON.parse(payload).text || ''; } catch {}
+            }
+          }
+        }
+        const aiText = acc.trim();
+        if (aiText) setTip({ symbol: ph.symbol, text: aiText, source: 'ai' });
+      } catch {}
+    })();
   };
 
   const handlePlayRecord = () => {
@@ -316,8 +377,8 @@ export default function GameSpeechStudio() {
                   </div>
                   <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-soft)', margin: 0, textAlign: 'center' }}>
                     {isSpeechSupported
-                      ? "Hãy nói to và rõ hơn, hoặc kiểm tra micro nhé! 🎙️ (+10 Sao, +4 Xu)"
-                      : "Dùng Chrome để nhận điểm chính xác. (+10 Sao, +4 Xu)"}
+                      ? "Hãy nói to và rõ hơn, hoặc kiểm tra micro nhé! 🎙️ (+5 Sao, +2 Xu)"
+                      : "Dùng Chrome để nhận điểm chính xác. (+5 Sao, +2 Xu)"}
                   </p>
                 </>
               ) : (
@@ -326,16 +387,50 @@ export default function GameSpeechStudio() {
                     <Award size={18} fill="var(--c-sun)" /> Cú Cốc Cốc chấm điểm:
                   </div>
                   <div style={{ fontSize: '1.8rem', letterSpacing: '4px' }}>
-                    {score === 3 ? "⭐⭐⭐" : "⭐⭐"}
+                    {'⭐'.repeat(score)}{'☆'.repeat(3 - score)}
                   </div>
-                  <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-soft)', margin: 0 }}>
+                  {result && (
+                    <div style={{ fontSize: '0.95rem', fontWeight: 900, color: result.overall >= 50 ? 'var(--c-grass)' : 'var(--c-coral)' }}>
+                      Khớp {result.overall}% ({result.matched}/{result.total} từ)
+                    </div>
+                  )}
+                  <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-soft)', margin: 0, textAlign: 'center' }}>
                     {score === 3
-                      ? "Tuyệt cú mèo! Bé phát âm chuẩn xác như người bản xứ! 🦉🎉 (+10 Sao, +4 Xu)"
-                      : "Bé đọc rất tốt! Thử lại để được 3 sao nhé! 🌟 (+10 Sao, +4 Xu)"}
+                      ? "Tuyệt cú mèo! Bé phát âm chuẩn xác như người bản xứ! 🦉🎉"
+                      : score === 2
+                        ? "Bé đọc rất tốt! Thử lại để được 3 sao nhé! 🌟"
+                        : "Cố lên! Nhấn vào từ màu đỏ để nghe lại rồi thử nói lại nhé! 💪"}
                   </p>
-                  {speechMatchText && (
-                    <div style={{ fontSize: '0.72rem', background: 'rgba(0,0,0,0.04)', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, color: 'var(--ink-soft)' }}>
-                      {speechMatchText}
+                  {/* Per-word breakdown — tap a missed word to hear it */}
+                  {result && result.words.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'center', marginTop: '4px' }}>
+                      {result.words.map((w, i) => (
+                        <button
+                          key={i}
+                          onClick={() => { beep('sine'); speak(w.word); }}
+                          style={{
+                            padding: '3px 9px', borderRadius: '9px', cursor: 'pointer',
+                            border: `2px solid ${w.ok ? 'var(--c-grass)' : 'var(--c-coral)'}`,
+                            background: w.ok ? 'rgba(118,210,117,0.12)' : 'rgba(255,107,107,0.1)',
+                            color: w.ok ? 'var(--c-grass)' : 'var(--c-coral)',
+                            fontWeight: 800, fontSize: '0.8rem',
+                          }}
+                        >
+                          {w.ok ? '✓' : '🔁'} {w.word}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Pronunciation tip for weakest phoneme */}
+                  {tip && (
+                    <div style={{
+                      marginTop: '6px', background: 'rgba(157,107,255,0.07)',
+                      border: '1.5px solid rgba(157,107,255,0.25)', borderRadius: '12px',
+                      padding: '8px 12px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--ink)',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                    }}>
+                      <Sparkles size={15} color="var(--c-purple)" />
+                      <span>🦉 {tip.text}</span>
                     </div>
                   )}
                 </>

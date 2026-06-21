@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { VIETNAM_CURRICULUM } from './VietnamCurriculum';
 import { VOCAB } from '../data/vocab';
-import { MERCHANDISE, QUEST_POOL } from '../data/merchandise';
+import { MERCHANDISE, QUEST_POOL, WEEKLY_CHALLENGE_POOL } from '../data/merchandise';
 import VOCAB_A1 from '../data/vocab_a1.json';
 import { getDueWords, reviewWord, getDefaultCard } from '../lib/srs';
 import { getIpa } from '../lib/ipaCache';
@@ -115,6 +115,7 @@ export const GameProvider = ({ children }) => {
   // BGM & Daily Quests States
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
   const [dailyQuests, setDailyQuests] = useState([]);
+  const [weeklyChallenge, setWeeklyChallenge] = useState(null);
 
   const initializeDailyQuests = (profileId) => {
     try {
@@ -169,6 +170,57 @@ export const GameProvider = ({ children }) => {
       }
       return nextQuests;
     });
+    // Same event also advances the weekly challenge if types match
+    updateWeeklyProgress(type, amount);
+  };
+
+  const updateWeeklyProgress = (type, amount = 1) => {
+    if (!currentProfile) return;
+    setWeeklyChallenge(prev => {
+      if (!prev || prev.completed || prev.type !== type) return prev;
+      const nextVal = Math.min(prev.current + amount, prev.target);
+      const isCompletedNow = nextVal >= prev.target;
+      if (isCompletedNow) {
+        setTimeout(() => {
+          addStarsAndCoins(prev.rewardStars, prev.rewardCoins, true);
+          showToast(`🏅 THỬ THÁCH TUẦN HOÀN THÀNH! +${prev.rewardStars}⭐ +${prev.rewardCoins}🪙`, "good");
+          beep('win');
+          try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+        }, 150);
+      }
+      const next = { ...prev, current: nextVal, completed: isCompletedNow };
+      localStorage.setItem(`vhta_weekly_${currentProfile.id}_${prev.weekKey}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // Weekly challenge — one bigger goal per ISO week per child, persisted by weekKey.
+  const initializeWeeklyChallenge = (profileId) => {
+    try {
+      const weekKey = currentWeekKey();
+      const storageKey = `vhta_weekly_${profileId}_${weekKey}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setWeeklyChallenge(JSON.parse(saved));
+      } else {
+        const pick = WEEKLY_CHALLENGE_POOL[Math.floor(Math.random() * WEEKLY_CHALLENGE_POOL.length)];
+        const generated = {
+          id: `w_${Date.now()}`,
+          weekKey,
+          type: pick.type,
+          text: pick.text,
+          target: pick.target,
+          current: 0,
+          completed: false,
+          rewardStars: pick.rewardStars,
+          rewardCoins: pick.rewardCoins,
+        };
+        setWeeklyChallenge(generated);
+        localStorage.setItem(storageKey, JSON.stringify(generated));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const toggleBgm = () => {
@@ -323,6 +375,7 @@ export const GameProvider = ({ children }) => {
           setReadStories(data[0].readStories || []);
           setSelectedGrade(data[0].selectedGrade || 'grade3');
           initializeDailyQuests(data[0].id);
+          initializeWeeklyChallenge(data[0].id);
           setActiveScreen('home');
         }
       } else {
@@ -514,6 +567,7 @@ export const GameProvider = ({ children }) => {
       setReadStories(prof.readStories || []);
       setSelectedGrade(prof.selectedGrade || 'grade3');
       initializeDailyQuests(prof.id);
+      initializeWeeklyChallenge(prof.id);
       setActiveScreen('home');
       setComboCount(0);
       setStudyMode('free');
@@ -553,6 +607,7 @@ export const GameProvider = ({ children }) => {
     setComboCount(0);
     setStudyMode('free');
     initializeDailyQuests(newProf.id);
+    initializeWeeklyChallenge(newProf.id);
     setActiveScreen('home');
     showToast(`Chào mừng ${name} gia nhập vương quốc! ✨`, 'good');
   };
@@ -1328,7 +1383,7 @@ export const GameProvider = ({ children }) => {
       }
     } catch {}
   };
-  const startListeningSpeech = (targetWord, onCorrect, onIncorrect) => {
+  const startListeningSpeech = (targetWord, onCorrect, onIncorrect, options = {}) => {
     if (!isSpeechSupported || !recognitionRef.current) {
       showToast("Trình duyệt không hỗ trợ luyện nói tiếng Anh! 🎙️", "bad");
       return;
@@ -1361,8 +1416,11 @@ export const GameProvider = ({ children }) => {
         const targetClean = targetWord.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
         
         const success = spokenClean === targetClean || spokenClean.includes(targetClean) || targetClean.includes(spokenClean);
-        // B4: track per-phoneme pronunciation accuracy
-        recordPronunciation(targetWord, success);
+        // B4: track per-phoneme pronunciation accuracy.
+        // skipPhonics lets multi-word callers (Speech Studio) record per-word themselves.
+        if (!options.skipPhonics) {
+          recordPronunciation(targetWord, success);
+        }
         if (success) {
           updateQuestProgress('speech', 1);
           if (onCorrect) onCorrect(transcript);
@@ -1672,6 +1730,7 @@ export const GameProvider = ({ children }) => {
       isBgmPlaying,
       toggleBgm,
       dailyQuests,
+      weeklyChallenge,
       updateQuestProgress,
 
       // CEFR vocab & SRS

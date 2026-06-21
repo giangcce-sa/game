@@ -228,7 +228,8 @@ export default function GameArcade({ onFinish, onBack }) {
       title: score >= 60 ? "Tay Nhanh Mắt Lẹ!" : "Hết Giờ Rồi Bé!",
       msg: `Bé đã xuất sắc thu thập được ${score} điểm! ${leveledUp ? 'Bé đã thăng cấp độ khó mới!' : ''}`,
       stars: score,
-      coins: Math.floor(score / 5)
+      coins: Math.floor(score / 5),
+      scorePct: Math.min(100, Math.round((score / 60) * 100)),
     });
   };
 
