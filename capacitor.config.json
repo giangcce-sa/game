@@ -1,0 +1,14 @@
+{
+  "appId": "com.anhcu.english",
+  "appName": "Anh Cú Học Tiếng Anh",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#f8f4ff"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

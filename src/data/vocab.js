@@ -1,0 +1,185 @@
+export const VOCAB = [
+  // Animals 🐾 (16 words)
+  {w:"cat",e:"🐱",vi:"con mèo",t:"animals"},
+  {w:"dog",e:"🐶",vi:"con chó",t:"animals"},
+  {w:"fish",e:"🐟",vi:"con cá",t:"animals"},
+  {w:"bird",e:"🐦",vi:"con chim",t:"animals"},
+  {w:"lion",e:"🦁",vi:"sư tử",t:"animals"},
+  {w:"tiger",e:"🐯",vi:"con hổ",t:"animals"},
+  {w:"elephant",e:"🐘",vi:"con voi",t:"animals"},
+  {w:"monkey",e:"🐵",vi:"con khỉ",t:"animals"},
+  {w:"rabbit",e:"🐰",vi:"con thỏ",t:"animals"},
+  {w:"bear",e:"🐻",vi:"con gấu",t:"animals"},
+  {w:"pig",e:"🐷",vi:"con heo",t:"animals"},
+  {w:"cow",e:"🐮",vi:"con bò",t:"animals"},
+  {w:"horse",e:"🐴",vi:"con ngựa",t:"animals"},
+  {w:"duck",e:"🦆",vi:"con vịt",t:"animals"},
+  {w:"frog",e:"🐸",vi:"con ếch",t:"animals"},
+  {w:"panda",e:"🐼",vi:"gấu trúc",t:"animals"},
+
+  // Food 🍎 (16 words)
+  {w:"apple",e:"🍎",vi:"quả táo",t:"food"},
+  {w:"banana",e:"🍌",vi:"quả chuối",t:"food"},
+  {w:"orange",e:"🍊",vi:"quả cam",t:"food"},
+  {w:"grape",e:"🍇",vi:"quả nho",t:"food"},
+  {w:"pizza",e:"🍕",vi:"bánh pizza",t:"food"},
+  {w:"bread",e:"🍞",vi:"bánh mì",t:"food"},
+  {w:"cake",e:"🍰",vi:"bánh ngọt",t:"food"},
+  {w:"milk",e:"🥛",vi:"sữa uống",t:"food"},
+  {w:"egg",e:"🥚",vi:"quả trứng",t:"food"},
+  {w:"rice",e:"🍚",vi:"cơm",t:"food"},
+  {w:"ice cream",e:"🍦",vi:"cây kem",t:"food"},
+  {w:"cookie",e:"🍪",vi:"bánh quy",t:"food"},
+  {w:"watermelon",e:"🍉",vi:"dưa hấu",t:"food"},
+  {w:"strawberry",e:"🍓",vi:"dâu tây",t:"food"},
+  {w:"carrot",e:"🥕",vi:"củ cà rốt",t:"food"},
+  {w:"corn",e:"🌽",vi:"bắp ngô",t:"food"},
+
+  // Colors 🎨 (10 words)
+  {w:"red",e:"🔴",vi:"màu đỏ",t:"colors"},
+  {w:"blue",e:"🔵",vi:"màu xanh dương",t:"colors"},
+  {w:"green",e:"🟢",vi:"màu xanh lá",t:"colors"},
+  {w:"yellow",e:"🟡",vi:"màu vàng",t:"colors"},
+  {w:"orange",e:"🟠",vi:"màu cam",t:"colors"},
+  {w:"purple",e:"🟣",vi:"màu tím",t:"colors"},
+  {w:"black",e:"⚫",vi:"màu đen",t:"colors"},
+  {w:"white",e:"⚪",vi:"màu trắng",t:"colors"},
+  {w:"brown",e:"🟤",vi:"màu nâu",t:"colors"},
+  {w:"pink",e:"🌸",vi:"màu hồng",t:"colors"},
+
+  // Numbers 🔢 (10 words)
+  {w:"one",e:"1️⃣",vi:"số một",t:"numbers"},
+  {w:"two",e:"2️⃣",vi:"số hai",t:"numbers"},
+  {w:"three",e:"3️⃣",vi:"số ba",t:"numbers"},
+  {w:"four",e:"4️⃣",vi:"số bốn",t:"numbers"},
+  {w:"five",e:"5️⃣",vi:"số năm",t:"numbers"},
+  {w:"six",e:"6️⃣",vi:"số sáu",t:"numbers"},
+  {w:"seven",e:"7️⃣",vi:"số bảy",t:"numbers"},
+  {w:"eight",e:"8️⃣",vi:"số tám",t:"numbers"},
+  {w:"nine",e:"9️⃣",vi:"số chín",t:"numbers"},
+  {w:"ten",e:"🔟",vi:"số mười",t:"numbers"},
+
+  // Nature 🌳 (10 words)
+  {w:"sun",e:"☀️",vi:"mặt trời",t:"nature"},
+  {w:"moon",e:"🌙",vi:"mặt trăng",t:"nature"},
+  {w:"star",e:"⭐",vi:"ngôi sao",t:"nature"},
+  {w:"cloud",e:"☁️",vi:"đám mây",t:"nature"},
+  {w:"rain",e:"🌧️",vi:"mưa",t:"nature"},
+  {w:"tree",e:"🌳",vi:"cái cây",t:"nature"},
+  {w:"flower",e:"🌷",vi:"bông hoa",t:"nature"},
+  {w:"fire",e:"🔥",vi:"ngọn lửa",t:"nature"},
+  {w:"rainbow",e:"🌈",vi:"cầu vồng",t:"nature"},
+  {w:"snow",e:"❄️",vi:"tuyết rơi",t:"nature"},
+
+  // Transport 🚗 (8 words)
+  {w:"car",e:"🚗",vi:"ô tô",t:"transport"},
+  {w:"bus",e:"🚌",vi:"xe buýt",t:"transport"},
+  {w:"train",e:"🚆",vi:"tàu hỏa",t:"transport"},
+  {w:"plane",e:"✈️",vi:"máy bay",t:"transport"},
+  {w:"boat",e:"⛵",vi:"thuyền buồm",t:"transport"},
+  {w:"bike",e:"🚲",vi:"xe đạp",t:"transport"},
+  {w:"truck",e:"🚚",vi:"xe tải",t:"transport"},
+  {w:"rocket",e:"🚀",vi:"tên lửa",t:"transport"},
+
+  // Things 🏠 (8 words)
+  {w:"house",e:"🏠",vi:"ngôi nhà",t:"things"},
+  {w:"book",e:"📚",vi:"quyển sách",t:"things"},
+  {w:"clock",e:"🕐",vi:"đồng hồ",t:"things"},
+  {w:"key",e:"🔑",vi:"chìa khóa",t:"things"},
+  {w:"phone",e:"📱",vi:"điện thoại",t:"things"},
+  {w:"ball",e:"⚽",vi:"quả bóng",t:"things"},
+  {w:"gift",e:"🎁",vi:"hộp quà",t:"things"},
+  {w:"umbrella",e:"☂️",vi:"cái ô",t:"things"},
+
+  // Body 🧒
+  {w:"eye",e:"👁️",vi:"mắt",t:"body"},
+  {w:"ear",e:"👂",vi:"tai",t:"body"},
+  {w:"nose",e:"👃",vi:"mũi",t:"body"},
+  {w:"mouth",e:"👄",vi:"miệng",t:"body"},
+  {w:"hand",e:"🖐️",vi:"bàn tay",t:"body"},
+  {w:"foot",e:"👣",vi:"bàn chân",t:"body"},
+  {w:"tooth",e:"🦷",vi:"răng",t:"body"},
+  {w:"brain",e:"🧠",vi:"não bộ",t:"body"},
+
+  // Family 👪
+  {w:"baby",e:"👶",vi:"em bé",t:"family"},
+  {w:"mother",e:"👩",vi:"mẹ",t:"family"},
+  {w:"father",e:"👨",vi:"bố",t:"family"},
+  {w:"sister",e:"👧",vi:"chị/em gái",t:"family"},
+  {w:"brother",e:"👦",vi:"anh/em trai",t:"family"},
+  {w:"grandma",e:"👵",vi:"bà",t:"family"},
+  {w:"grandpa",e:"👴",vi:"ông",t:"family"},
+
+  // School 🎒
+  {w:"pencil",e:"✏️",vi:"bút chì",t:"school"},
+  {w:"bag",e:"🎒",vi:"cặp sách",t:"school"},
+  {w:"ruler",e:"📏",vi:"thước kẻ",t:"school"},
+  {w:"computer",e:"💻",vi:"máy tính",t:"school"},
+  {w:"teacher",e:"👩‍🏫",vi:"cô giáo",t:"school"},
+  {w:"school",e:"🏫",vi:"trường học",t:"school"},
+
+  // Weather ☀️
+  {w:"sunny",e:"☀️",vi:"nắng",t:"weather"},
+  {w:"windy",e:"🌬️",vi:"nhiều gió",t:"weather"},
+  {w:"stormy",e:"⛈️",vi:"bão bùng",t:"weather"},
+  {w:"hot",e:"🥵",vi:"nóng bức",t:"weather"},
+  {w:"cold",e:"🥶",vi:"lạnh giá",t:"weather"},
+
+  // Sports ⚽
+  {w:"soccer",e:"⚽",vi:"bóng đá",t:"sports"},
+  {w:"swimming",e:"🏊",vi:"bơi lội",t:"sports"},
+  {w:"tennis",e:"🎾",vi:"quần vợt",t:"sports"},
+  {w:"runner",e:"🏃",vi:"chạy bộ",t:"sports"},
+  {w:"skating",e:"⛸️",vi:"trượt băng",t:"sports"},
+
+  // Clothes 👕
+  {w:"shirt",e:"👕",vi:"áo sơ mi",t:"clothes"},
+  {w:"pants",e:"👖",vi:"quần dài",t:"clothes"},
+  {w:"dress",e:"👗",vi:"váy liền",t:"clothes"},
+  {w:"hat",e:"👒",vi:"mũ",t:"clothes"},
+  {w:"shoes",e:"👟",vi:"giày",t:"clothes"},
+  {w:"socks",e:"🧦",vi:"tất chân",t:"clothes"},
+
+  // Feelings 😊
+  {w:"happy",e:"😊",vi:"vui vẻ",t:"feelings"},
+  {w:"sad",e:"😢",vi:"buồn bã",t:"feelings"},
+  {w:"angry",e:"😠",vi:"tức giận",t:"feelings"},
+  {w:"sleepy",e:"😴",vi:"buồn ngủ",t:"feelings"},
+  {w:"scared",e:"😱",vi:"sợ hãi",t:"feelings"},
+
+  // Jobs 👮
+  {w:"doctor",e:"🧑‍⚕️",vi:"bác sĩ",t:"jobs"},
+  {w:"pilot",e:"🧑‍✈️",vi:"phi công",t:"jobs"},
+  {w:"police",e:"👮",vi:"cảnh sát",t:"jobs"},
+  {w:"chef",e:"🧑‍🍳",vi:"đầu bếp",t:"jobs"},
+  {w:"farmer",e:"🧑‍🌾",vi:"nông dân",t:"jobs"},
+  {w:"artist",e:"🧑‍🎨",vi:"họa sĩ",t:"jobs"},
+
+  // Shapes 🔺
+  {w:"circle",e:"⭕",vi:"hình tròn",t:"shapes"},
+  {w:"square",e:"⏹️",vi:"hình vuông",t:"shapes"},
+  {w:"triangle",e:"🔺",vi:"hình tam giác",t:"shapes"},
+  {w:"heart",e:"❤️",vi:"hình trái tim",t:"shapes"},
+  {w:"diamond",e:"🔷",vi:"hình thoi",t:"shapes"},
+];
+
+export const TOPICS = [
+  {id:"all",     name:"Tất cả",      e:"🌈"},
+  {id:"animals", name:"Động vật",    e:"🐾"},
+  {id:"food",    name:"Thức ăn",     e:"🍎"},
+  {id:"colors",  name:"Màu sắc",     e:"🎨"},
+  {id:"numbers", name:"Con số",      e:"🔢"},
+  {id:"nature",  name:"Thiên nhiên", e:"🌳"},
+  {id:"transport",name:"Xe cộ",      e:"🚗"},
+  {id:"things",  name:"Đồ vật",      e:"🏠"},
+  {id:"body",    name:"Cơ thể",      e:"🧒"},
+  {id:"family",  name:"Gia đình",    e:"👪"},
+  {id:"school",  name:"Trường học",  e:"🎒"},
+  {id:"weather", name:"Thời tiết",   e:"☀️"},
+  {id:"sports",  name:"Thể thao",    e:"⚽"},
+  {id:"clothes", name:"Quần áo",     e:"👕"},
+  {id:"feelings",name:"Cảm xúc",     e:"😊"},
+  {id:"jobs",    name:"Nghề nghiệp", e:"👮"},
+  {id:"shapes",  name:"Hình khối",   e:"🔺"},
+  {id:"custom",  name:"Của cha mẹ",  e:"📝"},
+];

@@ -1,0 +1,12 @@
+services:
+  english-game-api:
+    build: .
+    container_name: english-game-api
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - internal-ai-gateway_default
+networks:
+  internal-ai-gateway_default:
+    external: true

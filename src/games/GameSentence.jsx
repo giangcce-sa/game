@@ -22,6 +22,7 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
   
   const [lockClick, setLockClick] = useState(false);
   const [dimmedIndices, setDimmedIndices] = useState([]);
+  const [coolDownActive, setCoolDownActive] = useState(false);
 
   const totalRounds = curriculumData ? Math.min(curriculumData.length, 5) : 5;
 
@@ -99,12 +100,24 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
     if (!isCorrectSoFar) {
       // Mistake! Trừ tim ngay lập tức
       beep('bad');
-      setLives(prev => prev - 1);
+      const nextLives = lives - 1;
+      setLives(nextLives);
+      
+      if (nextLives <= 0) {
+        finishGame(false, false);
+        return;
+      }
+
+      setCoolDownActive(true);
       showToast("Xếp sai từ rồi bé ơi! 🥺 Bấm Xoá để sửa lại nhé.", "bad");
       
       // Auto backspace the mistake
       setSelectedWords(prev => prev.slice(0, -1));
       setDimmedIndices(prev => prev.slice(0, -1));
+
+      setTimeout(() => {
+        setCoolDownActive(false);
+      }, 2500);
       return;
     }
 
@@ -140,12 +153,36 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
   const finishGame = (passed, lastWasCorrect = false) => {
     const finalCorrect = correctCount + (lastWasCorrect ? 1 : 0);
     
+    const isPerfect = finalCorrect === totalRounds && passed;
+    const isCareless = finalCorrect <= 1;
+
+    let rewardStars = finalCorrect * 15;
+    let rewardCoins = finalCorrect * 6;
+    let emoji = passed ? "🏆" : "💪";
+    let title = passed ? "Học Giả Xuất Sắc!" : "Cùng Thử Lại Bé Nhé!";
+    let msg = `Bé đã xếp đúng ${finalCorrect}/${totalRounds} câu giao tiếp!`;
+
+    if (isPerfect) {
+      emoji = "🎁🏆";
+      title = "Perfect! Rương Vàng Nhân Đôi! 🎁";
+      msg = "Bé ghép câu quá siêu phàm, không sai một bước! Cú tặng rương vàng gấp đôi xu và sao nhé!";
+      rewardStars = 150;
+      rewardCoins = 60;
+      addStarsAndCoins(75, 30, true); // double bonus
+    } else if (isCareless) {
+      emoji = "🦉💤";
+      title = "Bé Cần Tập Trung Hơn! 🦉";
+      msg = "Bé ghép toa tàu hơi vội vã rồi. Lần sau bé hãy nhìn kỹ dịch tiếng Việt để ghép thật chuẩn nhé!";
+      rewardStars = 1;
+      rewardCoins = 1;
+    }
+
     onFinish({
-      emoji: passed ? "🏆" : "💪",
-      title: passed ? "Học Giả Xuất Sắc!" : "Cùng Thử Lại Bé Nhé!",
-      msg: `Bé đã xếp đúng ${finalCorrect}/${totalRounds} câu giao tiếp!`,
-      stars: finalCorrect * 15,
-      coins: finalCorrect * 6
+      emoji,
+      title,
+      msg,
+      stars: rewardStars,
+      coins: rewardCoins
     });
   };
 
@@ -163,7 +200,30 @@ export default function GameSentence({ onFinish, onBack, curriculumData }) {
       </div>
 
       {/* Main Play Card */}
-      <div className="play-card" style={{ padding: '22px 16px' }}>
+      <div className="play-card" style={{ padding: '22px 16px', position: 'relative' }}>
+        
+        {/* Focus Guardian Timeout Prompt overlay */}
+        {coolDownActive && (
+          <div style={{
+            background: 'rgba(255, 107, 107, 0.08)',
+            border: '3.5px dashed var(--c-coral)',
+            padding: '12px 16px',
+            borderRadius: '20px',
+            margin: '0 0 16px',
+            fontSize: '0.86rem',
+            fontWeight: 800,
+            color: 'var(--c-coral)',
+            animation: 'shake 0.4s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            justifyContent: 'center'
+          }}>
+            <span>🦉</span>
+            <span>Cú nhắc nhở: "Bé chọn chưa đúng rồi. Hãy dừng lại 2 giây, suy nghĩ kỹ rồi chọn tiếp nhé!" ⏳</span>
+          </div>
+        )}
+
         <div className="q-label" style={{ marginBottom: '4px' }}>Bé hãy nhấp từ xếp thành câu tiếng Anh đúng:</div>
         
         {/* Vietnamese translation prompt */}

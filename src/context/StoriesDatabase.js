@@ -341,5 +341,222 @@ export const STORIES_DATABASE = [
         ans: "They think he is lying again"
       }
     ]
+  },
+  {
+    id: "story_crow",
+    title: "The Thirsty Crow",
+    e: "🐦🏺",
+    category: "Bài Học Cuộc Sống 🌱",
+    gradeLevel: "Lớp 1 - 2 🐥",
+    desc: "Chú quạ khát nước thông minh dùng sỏi để dâng nước lên. Dạy bé tư duy thông minh và kiên trì.",
+    pages: [
+      {
+        text: "A thirsty Crow finds a deep water jug.",
+        vi: "Một chú Quạ khát nước tìm thấy một chiếc bình nước sâu.",
+        img: "🐦🥵🏺💧",
+        wordsVi: {
+          "a": "một", "thirsty": "khát nước", "crow": "con quạ", "finds": "tìm thấy", "deep": "sâu", "water": "nước", "jug": "chiếc bình"
+        }
+      },
+      {
+        text: "He cannot reach the water at the bottom.",
+        vi: "Chú quạ không thể với tới nước ở dưới đáy bình.",
+        img: "🐦🚫🏺😭",
+        wordsVi: {
+          "he": "cậu ấy, nó", "cannot": "không thể", "reach": "với tới", "the": "từ chỉ định", "water": "nước", "at": "ở tại", "bottom": "đáy bình"
+        }
+      },
+      {
+        text: "The clever Crow drops small stones into the jug.",
+        vi: "Chú Quạ thông minh thả từng viên sỏi nhỏ vào bình.",
+        img: "🐦🪨🏺✨",
+        wordsVi: {
+          "the": "từ chỉ định", "clever": "thông minh", "crow": "con quạ", "drops": "thả vào, làm rơi", "small": "nhỏ", "stones": "những viên sỏi", "into": "vào trong", "jug": "chiếc bình"
+        }
+      },
+      {
+        text: "The water rises and the Crow drinks happily.",
+        vi: "Nước dâng cao lên và chú Quạ đã được uống nước vui vẻ.",
+        img: "🐦🏺💧😀",
+        wordsVi: {
+          "the": "từ chỉ định", "water": "nước", "rises": "dâng lên, mọc lên", "and": "và", "crow": "con quạ", "drinks": "uống", "happily": "vui vẻ, hạnh phúc"
+        }
+      }
+    ],
+    quiz: [
+      {
+        q: "What does the Crow drop into the jug?",
+        opts: ["Food", "Stones", "Flowers"],
+        ans: "Stones"
+      },
+      {
+        q: "Why does the Crow drop stones?",
+        opts: ["To make water rise", "To play a game", "To break the jug"],
+        ans: "To make water rise"
+      }
+    ]
+  },
+  {
+    id: "story_butterfly",
+    title: "The Life Cycle of a Butterfly",
+    e: "🐛🦋",
+    category: "Khoa Học Kỳ Thú 🚀",
+    gradeLevel: "Lớp 1 - 2 🐥",
+    desc: "Khám phá vòng đời kỳ diệu của bạn bướm xinh đẹp. Dạy bé kiến thức khoa học tự nhiên thú vị.",
+    pages: [
+      {
+        text: "A small egg sits on a green leaf.",
+        vi: "Một chiếc trứng nhỏ nằm xinh xắn trên chiếc lá xanh.",
+        img: "🥚🍃🌳✨",
+        wordsVi: {
+          "a": "một", "small": "nhỏ", "egg": "quả trứng", "sits": "nằm, ngồi", "on": "trên", "green": "màu xanh lá", "leaf": "chiếc lá"
+        }
+      },
+      {
+        text: "A hungry Caterpillar crawls out and eats leaves.",
+        vi: "Một chú Sâu bướm đói bụng bò ra và ăn lá cây.",
+        img: "🐛😋🍃🌳",
+        wordsVi: {
+          "a": "một", "hungry": "đói bụng", "caterpillar": "sâu bướm", "crawls": "bò trườn", "out": "ra ngoài", "and": "và", "eats": "ăn", "leaves": "những chiếc lá"
+        }
+      },
+      {
+        text: "It makes a warm cocoon and sleeps inside.",
+        vi: "Chú sâu tự làm chiếc kén ấm áp và ngủ ngoan bên trong.",
+        img: "🛌🪹😴💤",
+        wordsVi: {
+          "it": "nó", "makes": "làm ra", "a": "một", "warm": "ấm áp", "cocoon": "chiếc kén tơ", "and": "và", "sleeps": "ngủ", "inside": "bên trong"
+        }
+      },
+      {
+        text: "A beautiful Butterfly flies into the blue sky!",
+        vi: "Một bạn Bướm xinh đẹp bay vút lên bầu trời xanh!",
+        img: "🦋🌈🌤️✨",
+        wordsVi: {
+          "a": "một", "beautiful": "xinh đẹp", "butterfly": "con bướm", "flies": "bay lượn", "into": "vào trong", "the": "từ chỉ định", "blue": "màu xanh dương", "sky": "bầu trời"
+        }
+      }
+    ],
+    quiz: [
+      {
+        q: "What crawls out of the small egg?",
+        opts: ["A Butterfly", "A Caterpillar", "A Bird"],
+        ans: "A Caterpillar"
+      },
+      {
+        q: "What does the Caterpillar make to sleep inside?",
+        opts: ["A house", "A warm cocoon", "A bird nest"],
+        ans: "A warm cocoon"
+      }
+    ]
+  },
+  {
+    id: "story_solar",
+    title: "The Solar System Journey",
+    e: "🪐🚀",
+    category: "Khoa Học Kỳ Thú 🚀",
+    gradeLevel: "Lớp 3 - 5 🎓",
+    desc: "Du hành vũ trụ cùng phi thuyền khám phá Hệ Mặt Trời. Học tên các hành tinh tuyệt đẹp.",
+    pages: [
+      {
+        text: "The hot Sun sits at the center of space.",
+        vi: "Mặt trời rực lửa nằm ở trung tâm của vũ trụ bao la.",
+        img: "☀️🌌☄️🪐",
+        wordsVi: {
+          "the": "từ chỉ định", "hot": "nóng bức", "sun": "mặt trời", "sits": "nằm ở", "at": "tại", "center": "trung tâm", "of": "của", "space": "không gian vũ trụ"
+        }
+      },
+      {
+        text: "Earth is our beautiful blue home planet.",
+        vi: "Trái Đất là hành tinh xanh quê hương xinh đẹp của chúng ta.",
+        img: "🌍🌳💙🌌",
+        wordsVi: {
+          "earth": "trái đất", "is": "là", "our": "của chúng ta", "beautiful": "xinh đẹp", "blue": "xanh dương", "home": "nhà, quê hương", "planet": "hành tinh"
+        }
+      },
+      {
+        text: "Giant Jupiter is the biggest planet of all.",
+        vi: "Sao Mộc khổng lồ là hành tinh to lớn nhất trong tất cả.",
+        img: "🪐👑🌌✨",
+        wordsVi: {
+          "giant": "khổng lồ", "jupiter": "sao mộc", "is": "là", "the": "từ chỉ định", "biggest": "to lớn nhất", "planet": "hành tinh", "of": "của", "all": "tất cả"
+        }
+      },
+      {
+        text: "Rockets travel fast to explore mysterious stars.",
+        vi: "Những chiếc tên lửa bay cực nhanh để khám phá các vì sao bí ẩn.",
+        img: "🚀☄️🌟✨",
+        wordsVi: {
+          "rockets": "những tên lửa", "travel": "du hành, đi lại", "fast": "nhanh", "to": "để", "explore": "khám phá", "mysterious": "bí ẩn, kỳ bí", "stars": "những ngôi sao"
+        }
+      }
+    ],
+    quiz: [
+      {
+        q: "Which planet is the biggest in our solar system?",
+        opts: ["Earth", "Mars", "Jupiter"],
+        ans: "Jupiter"
+      },
+      {
+        q: "What is Earth's color in space?",
+        opts: ["Red", "Blue", "Green"],
+        ans: "Blue"
+      }
+    ]
+  },
+  {
+    id: "story_chung",
+    title: "The Legend of Banh Chung",
+    e: "🌾🍃",
+    category: "Cổ Tích VN 🌾",
+    gradeLevel: "Lớp 3 - 5 🎓",
+    desc: "Sự tích Bánh Chưng Bánh Dầy ngày Tết Việt Nam. Dạy bé lòng hiếu thảo và tình yêu cội nguồn.",
+    pages: [
+      {
+        text: "King Hung wants to choose a new king.",
+        vi: "Vua Hùng vương muốn chọn một vị vua hiền đức mới để truyền ngôi.",
+        img: "👑👨‍💼🏰🌾",
+        wordsVi: {
+          "king": "vua", "hung": "hùng vương", "wants": "muốn", "to": "để", "choose": "lựa chọn", "a": "một", "new": "mới"
+        }
+      },
+      {
+        text: "Prince Lang Lieu is poor but very kind.",
+        vi: "Hoàng tử Lang Liêu nghèo khó nhưng rất hiền lành hiếu thảo.",
+        img: "🧑‍🌾🏡❤️🌾",
+        wordsVi: {
+          "prince": "hoàng tử", "lang": "lang", "lieu": "liêu", "is": "thì, là", "poor": "nghèo khó", "but": "nhưng", "very": "rất", "kind": "tốt bụng, hiền hậu"
+        }
+      },
+      {
+        text: "He makes square cakes from green rice leaves.",
+        vi: "Chàng may mắn nghĩ ra cách làm bánh chưng vuông từ hạt gạo và lá dong xanh.",
+        img: "🧑‍🌾🍃🌾🟩",
+        wordsVi: {
+          "he": "chàng, nó", "makes": "làm ra, gói ra", "square": "hình vuông", "cakes": "những chiếc bánh", "from": "từ", "green": "xanh", "rice": "gạo, lúa nước", "leaves": "lá cây"
+        }
+      },
+      {
+        text: "Lang Lieu becomes the king on Tet holiday!",
+        vi: "Lang Liêu đã được truyền ngôi vua xứng đáng vào dịp Tết cổ truyền!",
+        img: "👑🎉🌾✨",
+        wordsVi: {
+          "lang": "lang", "lieu": "liêu", "becomes": "trở thành", "the": "từ chỉ định", "king": "vua", "on": "vào dịp", "tet": "tết", "holiday": "ngày lễ"
+        }
+      }
+    ],
+    quiz: [
+      {
+        q: "Who made the square cakes?",
+        opts: ["King Hung", "Prince Lang Lieu", "The Raven"],
+        ans: "Prince Lang Lieu"
+      },
+      {
+        q: "What shape are the cakes made by Lang Lieu?",
+        opts: ["Circle", "Triangle", "Square"],
+        ans: "Square"
+      }
+    ]
   }
 ];
+

@@ -32,6 +32,13 @@ export default function GameArcade({ onFinish, onBack }) {
   const balloonIdCounter = useRef(0);
   const targetWordRef = useRef(null);
   const secondaryTargetRef = useRef(null);
+  const balloonTimers = useRef(new Set()); // tracks per-balloon setTimeouts
+
+  // Clear all pending balloon timers on unmount
+  useEffect(() => () => {
+    balloonTimers.current.forEach(t => clearTimeout(t));
+    balloonTimers.current.clear();
+  }, []);
 
   const getVocabPool = () => {
     const combined = getCombinedVocab();
@@ -151,16 +158,22 @@ export default function GameArcade({ onFinish, onBack }) {
     setBalloons(prev => [...prev, newBalloon]);
 
     // Animate balloon rising
-    setTimeout(() => {
-      setBalloons(prev => prev.map(b => 
+    const riseT = setTimeout(() => {
+      balloonTimers.current.delete(riseT);
+      if (!gameRunning.current) return;
+      setBalloons(prev => prev.map(b =>
         b.id === id ? { ...b, style: { ...b.style, bottom: 'calc(100% + 20px)' } } : b
       ));
     }, 50);
+    balloonTimers.current.add(riseT);
 
     // Remove balloon when transition ends
-    setTimeout(() => {
+    const removeT = setTimeout(() => {
+      balloonTimers.current.delete(removeT);
+      if (!gameRunning.current) return;
       setBalloons(prev => prev.filter(b => b.id !== id));
     }, duration + 100);
+    balloonTimers.current.add(removeT);
   };
 
   const handleBalloonClick = (balloon) => {
@@ -221,6 +234,10 @@ export default function GameArcade({ onFinish, onBack }) {
 
   const handleBack = () => {
     gameRunning.current = false;
+    if (gameTimer.current) clearInterval(gameTimer.current);
+    if (spawnTimer.current) clearInterval(spawnTimer.current);
+    balloonTimers.current.forEach(t => clearTimeout(t));
+    balloonTimers.current.clear();
     onBack();
   };
 

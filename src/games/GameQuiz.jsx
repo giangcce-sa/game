@@ -12,7 +12,8 @@ export default function GameQuiz({ onFinish, onBack }) {
     quizLevel,
     levelUpGame,
     getCombinedVocab,
-    updateAnalytics
+    updateAnalytics,
+    addFailedSeed
   } = useGame();
   
   const [round, setRound] = useState(0);
@@ -25,6 +26,7 @@ export default function GameQuiz({ onFinish, onBack }) {
   const [selectedOpt, setSelectedOpt] = useState(null);
   const [lockClick, setLockClick] = useState(false);
   const [dimmedOpts, setDimmedOpts] = useState([]);
+  const [coolDownActive, setCoolDownActive] = useState(false);
   
   // Quiz modes: 'pic' | 'word' | 'listen' | 'spelling'
   const [quizMode, setQuizMode] = useState('pic'); 
@@ -102,6 +104,16 @@ export default function GameQuiz({ onFinish, onBack }) {
       );
       addStarsAndCoins(12, 5, true);
       setCorrectCount(prev => prev + 1);
+
+      setTimeout(() => {
+        const nextRound = round + 1;
+        if (nextRound >= totalRounds) {
+          finishGame(lives > 0, true);
+        } else {
+          setRound(nextRound);
+          startRound(nextRound);
+        }
+      }, 900);
     } else {
       beep('bad');
       setLives(prev => prev - 1);
@@ -110,19 +122,23 @@ export default function GameQuiz({ onFinish, onBack }) {
       setDimmedOpts(wrongOpts);
       showToast(`Từ đúng là: ${currentQuestion.w}`, "bad");
       addStarsAndCoins(0, 0, false); // reset streak
+      addFailedSeed(currentQuestion);
+      
+      setCoolDownActive(true);
+
+      setTimeout(() => {
+        setCoolDownActive(false);
+        const nextRound = round + 1;
+        const updatedLives = lives - 1;
+
+        if (nextRound >= totalRounds || updatedLives <= 0) {
+          finishGame(updatedLives > 0, false);
+        } else {
+          setRound(nextRound);
+          startRound(nextRound);
+        }
+      }, 2500);
     }
-
-    setTimeout(() => {
-      const nextRound = round + 1;
-      const updatedLives = isCorrect ? lives : lives - 1;
-
-      if (nextRound >= totalRounds || updatedLives <= 0) {
-        finishGame(updatedLives > 0, isCorrect);
-      } else {
-        setRound(nextRound);
-        startRound(nextRound);
-      }
-    }, isCorrect ? 900 : 1600);
   };
 
   // Spelling Anagram actions
@@ -154,9 +170,12 @@ export default function GameQuiz({ onFinish, onBack }) {
         setLives(prev => prev - 1);
         showToast(`Từ đúng là: ${currentQuestion.w.toUpperCase()}`, "bad");
         addStarsAndCoins(0, 0, false); // reset streak
+        addFailedSeed(currentQuestion);
+        setCoolDownActive(true);
       }
 
       setTimeout(() => {
+        setCoolDownActive(false);
         const nextRound = round + 1;
         const updatedLives = isCorrect ? lives : lives - 1;
 
@@ -166,7 +185,7 @@ export default function GameQuiz({ onFinish, onBack }) {
           setRound(nextRound);
           startRound(nextRound);
         }
-      }, isCorrect ? 900 : 1800);
+      }, isCorrect ? 900 : 2500);
     }
   };
 
@@ -186,12 +205,38 @@ export default function GameQuiz({ onFinish, onBack }) {
       leveledUp = true;
     }
 
+    const isPerfect = finalCorrect === totalRounds && passed;
+    const isCareless = finalCorrect <= 2;
+
+    let rewardStars = finalCorrect * 12;
+    let rewardCoins = finalCorrect * 5;
+    let emoji = passed ? (perfectScore ? "🏆" : "🎓") : "💪";
+    let title = passed ? (leveledUp ? `Lên Cấp ${quizLevel + 1}! 🎉` : "Vượt Ải Xuất Sắc!") : "Cùng Thử Lại Nhé!";
+    let msg = `Bé đã đúng ${finalCorrect}/${totalRounds} câu. Trình độ hiện tại: Cấp ${currentProfile.quizLevel}.`;
+
+    if (isPerfect) {
+      emoji = "🎁🏆";
+      title = "Perfect! Rương Vàng Nhân Đôi! 🎁";
+      msg = "Con làm bài cực kỳ tập trung, không sai câu nào! Cú thưởng Rương Vàng gấp đôi điểm số nhé!";
+      rewardStars = 120;
+      rewardCoins = 50;
+      // Dispatch double reward directly in game session
+      addStarsAndCoins(60, 25, true); // give the extra bonus (we already gave standard)
+    } else if (isCareless) {
+      emoji = "🦉💤";
+      title = "Bé Cần Tập Trung Hơn! 🦉";
+      msg = "Bé làm hơi nhanh và bị sai nhiều rồi. Hãy bình tĩnh nhìn hình để đạt điểm tuyệt đối nhé!";
+      rewardStars = 1;
+      rewardCoins = 1;
+    }
+
     onFinish({
-      emoji: passed ? (perfectScore ? "🏆" : "🎓") : "💪",
-      title: passed ? (leveledUp ? `Lên Cấp ${quizLevel + 1}! 🎉` : "Vượt Ải Xuất Sắc!") : "Cùng Thử Lại Nhé!",
-      msg: `Bé đã đúng ${finalCorrect}/${totalRounds} câu. Trình độ hiện tại: Cấp ${currentProfile.quizLevel}.`,
-      stars: finalCorrect * 12,
-      coins: finalCorrect * 5
+      emoji,
+      title,
+      msg,
+      stars: rewardStars,
+      coins: rewardCoins,
+      scorePct: Math.round((finalCorrect / totalRounds) * 100),
     });
   };
 
@@ -232,8 +277,30 @@ export default function GameQuiz({ onFinish, onBack }) {
       </div>
 
       {/* Main Play Card */}
-      <div className="play-card">
+      <div className="play-card" style={{ position: 'relative' }}>
         
+        {/* Focus Guardian Timeout Prompt overlay */}
+        {coolDownActive && (
+          <div style={{
+            background: 'rgba(255, 107, 107, 0.08)',
+            border: '3.5px dashed var(--c-coral)',
+            padding: '12px 16px',
+            borderRadius: '20px',
+            margin: '0 0 16px',
+            fontSize: '0.86rem',
+            fontWeight: 800,
+            color: 'var(--c-coral)',
+            animation: 'shake 0.4s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            justifyContent: 'center'
+          }}>
+            <span>🦉</span>
+            <span>Cú nhắc nhở: "Bé chọn chưa đúng rồi. Hãy dừng lại 2 giây, suy nghĩ kỹ rồi chọn tiếp nhé!" ⏳</span>
+          </div>
+        )}
+
         {/* MODE 1: SPELLING ANAGRAM */}
         {quizMode === 'spelling' && (
           <div>

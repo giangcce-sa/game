@@ -29,6 +29,54 @@ body.theme-ocean { --bg-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 10
 body.theme-forest { --bg-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
 body.theme-sunset { --bg-gradient: linear-gradient(135deg, #f12711 0%, #f5af19 100%); }
 body.theme-space { --bg-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); --ink: #f0f0ff; --paper: #1f1b40; --card: #282259; }
+body.theme-sakura { --bg-gradient: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%); }
+body.theme-mint { --bg-gradient: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); }
+body.theme-lavender { --bg-gradient: linear-gradient(135deg, #c471f5 0%, #fa71cd 100%); }
+body.theme-peach { --bg-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+body.theme-neon { --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #ff00ff 100%); --ink: #f0f0ff; --paper: #1a1438; --card: #261c4d; }
+body.theme-aurora { --bg-gradient: linear-gradient(135deg, #00c9a7 0%, #845ec2 50%, #ff6f91 100%); --ink: #fff; }
+body.theme-galaxy { --bg-gradient: radial-gradient(circle at 20% 20%, #fff 1px, transparent 2px), radial-gradient(circle at 70% 40%, #fff 1px, transparent 2px), linear-gradient(135deg, #1a0033 0%, #2d1b69 50%, #6b1382 100%); --ink: #f0f0ff; --paper: #1f0d3a; --card: #2d1758; }
+body.theme-royal { --bg-gradient: linear-gradient(135deg, #d4af37 0%, #ffd700 50%, #b8860b 100%); --ink: #2d1810; }
+
+/* ── Dark Mode (overrides all themes) ─────────────────────────── */
+body.dark-mode {
+  --ink: #f0eafa;
+  --ink-soft: #b8b0d8;
+  --paper: #1a1638;
+  --card: #25204a;
+  --bg-gradient: radial-gradient(circle at 15% 12%, rgba(157,107,255,.18), transparent 38%), linear-gradient(160deg, #0f0a26 0%, #1f1648 55%, #2d1b69 100%);
+  --shadow-sm: 0 4px 0 rgba(0,0,0,.4);
+  --shadow-md: 0 10px 24px rgba(0,0,0,.4);
+}
+body.dark-mode .play-card,
+body.dark-mode .profile-box,
+body.dark-mode .modal,
+body.dark-mode .input-fancy,
+body.dark-mode .game-card,
+body.dark-mode .greeting-card,
+body.dark-mode .topic-container,
+body.dark-mode .stat,
+body.dark-mode .topbar,
+body.dark-mode .back-btn {
+  color: var(--ink);
+}
+body.dark-mode .input-fancy {
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--ink) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+body.dark-mode .input-fancy::placeholder { color: rgba(255,255,255,0.4); }
+body.dark-mode .topbar,
+body.dark-mode .stat { background: rgba(37,32,74,0.85); color: var(--ink); }
+body.dark-mode .back-btn { background: var(--card); color: var(--ink); }
+body.dark-mode .store-item,
+body.dark-mode .pet-card {
+  background: var(--card) !important;
+  color: var(--ink);
+  border-color: rgba(255,255,255,0.08);
+}
+body.dark-mode .s-desc { color: var(--ink-soft) !important; }
+body.dark-mode .s-name { color: var(--ink) !important; }
 
 * {
   margin: 0;
@@ -238,6 +286,46 @@ body.theme-space .stat { background: #151130; color: #fff; }
   cursor: pointer;
 }
 @keyframes bob { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-12px) rotate(3deg); } }
+@keyframes cu-float-idle { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.04); } }
+
+/* ── Cú flight tour: lazy-8 arc around the viewport using viewport units ── */
+@keyframes cu-fly-tour {
+  0%   { transform: translate(0, 0)         rotate(0deg)   scale(1); }
+  12%  { transform: translate(-12vw, -18vh) rotate(-12deg) scale(0.95); }
+  25%  { transform: translate(-32vw, -28vh) rotate(-18deg) scale(0.9); }
+  40%  { transform: translate(-58vw, -42vh) rotate(-8deg)  scale(0.85); }
+  52%  { transform: translate(-72vw, -60vh) rotate(8deg)   scale(0.82); }
+  65%  { transform: translate(-58vw, -72vh) rotate(14deg)  scale(0.85); }
+  78%  { transform: translate(-32vw, -55vh) rotate(6deg)   scale(0.9); }
+  90%  { transform: translate(-12vw, -28vh) rotate(-4deg)  scale(0.95); }
+  100% { transform: translate(0, 0)         rotate(0deg)   scale(1); }
+}
+.cu-fly-tour { animation: cu-fly-tour 5s cubic-bezier(0.45, 0, 0.55, 1) 1; }
+
+/* ── Hero Cú swoop: dive down, sweep across the games, return home ── */
+@keyframes cu-hero-swoop {
+  0%   { transform: translate(0, 0)        rotate(0deg)   scale(1); }
+  15%  { transform: translate(-22vw, 6vh)  rotate(-15deg) scale(0.9); }
+  30%  { transform: translate(-30vw, 22vh) rotate(-8deg)  scale(0.85); }
+  45%  { transform: translate(-12vw, 32vh) rotate(0deg)   scale(0.8); }
+  55%  { transform: translate(12vw, 32vh)  rotate(0deg)   scale(0.8); }
+  70%  { transform: translate(30vw, 22vh)  rotate(8deg)   scale(0.85); }
+  85%  { transform: translate(22vw, 6vh)   rotate(15deg)  scale(0.9); }
+  100% { transform: translate(0, 0)        rotate(0deg)   scale(1); }
+}
+
+/* ── Hero Cú small bounce hop (between swoops) ── */
+@keyframes cu-hero-hop {
+  0%,100% { transform: translateY(0)   rotate(-3deg); }
+  50%     { transform: translateY(-20px) rotate(3deg); }
+}
+
+/* Sparkle trail behind flying owl */
+@keyframes cu-spark-trail {
+  0%   { opacity: 0; transform: scale(0.3); }
+  30%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.2) translate(20px, 20px); }
+}
 
 .hero h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); font-weight: 800; }
 .hero p { font-weight: 600; font-size: 0.95rem; opacity: .95; }
@@ -656,3 +744,9 @@ body.theme-space .back-btn { background: #1f1b40; color: #fff; }
   .opt { font-size: 1rem; padding: 12px 4px; }
   .game-card { min-height: 120px; }
 }
+
+@keyframes pulseMic {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); box-shadow: 0 0 14px #ff4757; }
+}
+

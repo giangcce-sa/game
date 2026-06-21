@@ -1,221 +1,54 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { VIETNAM_CURRICULUM } from './VietnamCurriculum';
+import { VOCAB } from '../data/vocab';
+import { MERCHANDISE, QUEST_POOL } from '../data/merchandise';
+import VOCAB_A1 from '../data/vocab_a1.json';
+import { getDueWords, reviewWord, getDefaultCard } from '../lib/srs';
+import { getIpa } from '../lib/ipaCache';
+import { getPetStage } from '../lib/petStages';
+import { STREAK_MILESTONES, getMilestoneToClaim } from '../lib/streakLevels';
+import { generateFriendCode, isValidFriendCode, currentWeekKey } from '../lib/friendCode';
+import { extractPhonemesFromIpa } from '../lib/phonics';
+import { getLevelKey, getLevelDelta, getWeakTopics, getNextFocusTopic } from '../lib/adaptive';
+
+// Re-export so existing imports from GameContext still work
+export { VOCAB, TOPICS } from '../data/vocab';
+export { MERCHANDISE, QUEST_POOL } from '../data/merchandise';
 
 const GameContext = createContext();
 
-export const VOCAB = [
-  // Animals 🐾 (16 words)
-  {w:"cat",e:"🐱",vi:"con mèo",t:"animals"},
-  {w:"dog",e:"🐶",vi:"con chó",t:"animals"},
-  {w:"fish",e:"🐟",vi:"con cá",t:"animals"},
-  {w:"bird",e:"🐦",vi:"con chim",t:"animals"},
-  {w:"lion",e:"🦁",vi:"sư tử",t:"animals"},
-  {w:"tiger",e:"🐯",vi:"con hổ",t:"animals"},
-  {w:"elephant",e:"🐘",vi:"con voi",t:"animals"},
-  {w:"monkey",e:"🐵",vi:"con khỉ",t:"animals"},
-  {w:"rabbit",e:"🐰",vi:"con thỏ",t:"animals"},
-  {w:"bear",e:"🐻",vi:"con gấu",t:"animals"},
-  {w:"pig",e:"🐷",vi:"con heo",t:"animals"},
-  {w:"cow",e:"🐮",vi:"con bò",t:"animals"},
-  {w:"horse",e:"🐴",vi:"con ngựa",t:"animals"},
-  {w:"duck",e:"🦆",vi:"con vịt",t:"animals"},
-  {w:"frog",e:"🐸",vi:"con ếch",t:"animals"},
-  {w:"panda",e:"🐼",vi:"gấu trúc",t:"animals"},
-  
-  // Food 🍎 (16 words)
-  {w:"apple",e:"🍎",vi:"quả táo",t:"food"},
-  {w:"banana",e:"🍌",vi:"quả chuối",t:"food"},
-  {w:"orange",e:"🍊",vi:"quả cam",t:"food"},
-  {w:"grape",e:"🍇",vi:"quả nho",t:"food"},
-  {w:"pizza",e:"🍕",vi:"bánh pizza",t:"food"},
-  {w:"bread",e:"🍞",vi:"bánh mì",t:"food"},
-  {w:"cake",e:"🍰",vi:"bánh ngọt",t:"food"},
-  {w:"milk",e:"🥛",vi:"sữa uống",t:"food"},
-  {w:"egg",e:"🥚",vi:"quả trứng",t:"food"},
-  {w:"rice",e:"🍚",vi:"cơm",t:"food"},
-  {w:"ice cream",e:"🍦",vi:"cây kem",t:"food"},
-  {w:"cookie",e:"🍪",vi:"bánh quy",t:"food"},
-  {w:"watermelon",e:"🍉",vi:"dưa hấu",t:"food"},
-  {w:"strawberry",e:"🍓",vi:"dâu tây",t:"food"},
-  {w:"carrot",e:"🥕",vi:"củ cà rốt",t:"food"},
-  {w:"corn",e:"🌽",vi:"bắp ngô",t:"food"},
-
-  // Colors 🎨 (10 words)
-  {w:"red",e:"🔴",vi:"màu đỏ",t:"colors"},
-  {w:"blue",e:"🔵",vi:"màu xanh dương",t:"colors"},
-  {w:"green",e:"🟢",vi:"màu xanh lá",t:"colors"},
-  {w:"yellow",e:"🟡",vi:"màu vàng",t:"colors"},
-  {w:"orange",e:"🟠",vi:"màu cam",t:"colors"},
-  {w:"purple",e:"🟣",vi:"màu tím",t:"colors"},
-  {w:"black",e:"⚫",vi:"màu đen",t:"colors"},
-  {w:"white",e:"⚪",vi:"màu trắng",t:"colors"},
-  {w:"brown",e:"🟤",vi:"màu nâu",t:"colors"},
-  {w:"pink",e:"🌸",vi:"màu hồng",t:"colors"},
-
-  // Numbers 🔢 (10 words)
-  {w:"one",e:"1️⃣",vi:"số một",t:"numbers"},
-  {w:"two",e:"2️⃣",vi:"số hai",t:"numbers"},
-  {w:"three",e:"3️⃣",vi:"số ba",t:"numbers"},
-  {w:"four",e:"4️⃣",vi:"số bốn",t:"numbers"},
-  {w:"five",e:"5️⃣",vi:"số năm",t:"numbers"},
-  {w:"six",e:"6️⃣",vi:"số sáu",t:"numbers"},
-  {w:"seven",e:"7️⃣",vi:"số bảy",t:"numbers"},
-  {w:"eight",e:"8️⃣",vi:"số tám",t:"numbers"},
-  {w:"nine",e:"9️⃣",vi:"số chín",t:"numbers"},
-  {w:"ten",e:"🔟",vi:"số mười",t:"numbers"},
-
-  // Nature 🌳 (10 words)
-  {w:"sun",e:"☀️",vi:"mặt trời",t:"nature"},
-  {w:"moon",e:"🌙",vi:"mặt trăng",t:"nature"},
-  {w:"star",e:"⭐",vi:"ngôi sao",t:"nature"},
-  {w:"cloud",e:"☁️",vi:"đám mây",t:"nature"},
-  {w:"rain",e:"🌧️",vi:"mưa",t:"nature"},
-  {w:"tree",e:"🌳",vi:"cái cây",t:"nature"},
-  {w:"flower",e:"🌷",vi:"bông hoa",t:"nature"},
-  {w:"fire",e:"🔥",vi:"ngọn lửa",t:"nature"},
-  {w:"rainbow",e:"🌈",vi:"cầu vồng",t:"nature"},
-  {w:"snow",e:"❄️",vi:"tuyết rơi",t:"nature"},
-
-  // Transport 🚗 (8 words)
-  {w:"car",e:"🚗",vi:"ô tô",t:"transport"},
-  {w:"bus",e:"🚌",vi:"xe buýt",t:"transport"},
-  {w:"train",e:"🚆",vi:"tàu hỏa",t:"transport"},
-  {w:"plane",e:"✈️",vi:"máy bay",t:"transport"},
-  {w:"boat",e:"⛵",vi:"thuyền buồm",t:"transport"},
-  {w:"bike",e:"🚲",vi:"xe đạp",t:"transport"},
-  {w:"truck",e:"🚚",vi:"xe tải",t:"transport"},
-  {w:"rocket",e:"🚀",vi:"tên lửa",t:"transport"},
-
-  // Things 🏠 (8 words)
-  {w:"house",e:"🏠",vi:"ngôi nhà",t:"things"},
-  {w:"book",e:"📚",vi:"quyển sách",t:"things"},
-  {w:"clock",e:"🕐",vi:"đồng hồ",t:"things"},
-  {w:"key",e:"🔑",vi:"chìa khóa",t:"things"},
-  {w:"phone",e:"📱",vi:"điện thoại",t:"things"},
-  {w:"ball",e:"⚽",vi:"quả bóng",t:"things"},
-  {w:"gift",e:"🎁",vi:"hộp quà",t:"things"},
-  {w:"umbrella",e:"☂️",vi:"cái ô",t:"things"},
-
-  // Body 🧒
-  {w:"eye",e:"👁️",vi:"mắt",t:"body"},
-  {w:"ear",e:"👂",vi:"tai",t:"body"},
-  {w:"nose",e:"👃",vi:"mũi",t:"body"},
-  {w:"mouth",e:"👄",vi:"miệng",t:"body"},
-  {w:"hand",e:"🖐️",vi:"bàn tay",t:"body"},
-  {w:"foot",e:"👣",vi:"bàn chân",t:"body"},
-  {w:"tooth",e:"🦷",vi:"răng",t:"body"},
-  {w:"brain",e:"🧠",vi:"não bộ",t:"body"},
-
-  // Family 👪
-  {w:"baby",e:"👶",vi:"em bé",t:"family"},
-  {w:"mother",e:"👩",vi:"mẹ",t:"family"},
-  {w:"father",e:"👨",vi:"bố",t:"family"},
-  {w:"sister",e:"👧",vi:"chị/em gái",t:"family"},
-  {w:"brother",e:"👦",vi:"anh/em trai",t:"family"},
-  {w:"grandma",e:"👵",vi:"bà",t:"family"},
-  {w:"grandpa",e:"👴",vi:"ông",t:"family"},
-
-  // School 🎒
-  {w:"pencil",e:"✏️",vi:"bút chì",t:"school"},
-  {w:"bag",e:"🎒",vi:"cặp sách",t:"school"},
-  {w:"ruler",e:"📏",vi:"thước kẻ",t:"school"},
-  {w:"computer",e:"💻",vi:"máy tính",t:"school"},
-  {w:"teacher",e:"👩‍🏫",vi:"cô giáo",t:"school"},
-  {w:"school",e:"🏫",vi:"trường học",t:"school"},
-
-  // Weather ☀️
-  {w:"sunny",e:"☀️",vi:"nắng",t:"weather"},
-  {w:"windy",e:"🌬️",vi:"nhiều gió",t:"weather"},
-  {w:"stormy",e:"⛈️",vi:"bão bùng",t:"weather"},
-  {w:"hot",e:"🥵",vi:"nóng bức",t:"weather"},
-  {w:"cold",e:"🥶",vi:"lạnh giá",t:"weather"},
-
-  // Sports ⚽
-  {w:"soccer",e:"⚽",vi:"bóng đá",t:"sports"},
-  {w:"swimming",e:"🏊",vi:"bơi lội",t:"sports"},
-  {w:"tennis",e:"🎾",vi:"quần vợt",t:"sports"},
-  {w:"runner",e:"🏃",vi:"chạy bộ",t:"sports"},
-  {w:"skating",e:"⛸️",vi:"trượt băng",t:"sports"},
-
-  // Clothes 👕
-  {w:"shirt",e:"👕",vi:"áo sơ mi",t:"clothes"},
-  {w:"pants",e:"👖",vi:"quần dài",t:"clothes"},
-  {w:"dress",e:"👗",vi:"váy liền",t:"clothes"},
-  {w:"hat",e:"👒",vi:"mũ",t:"clothes"},
-  {w:"shoes",e:"👟",vi:"giày",t:"clothes"},
-  {w:"socks",e:"🧦",vi:"tất chân",t:"clothes"},
-
-  // Feelings 😊
-  {w:"happy",e:"😊",vi:"vui vẻ",t:"feelings"},
-  {w:"sad",e:"😢",vi:"buồn bã",t:"feelings"},
-  {w:"angry",e:"😠",vi:"tức giận",t:"feelings"},
-  {w:"sleepy",e:"😴",vi:"buồn ngủ",t:"feelings"},
-  {w:"scared",e:"😱",vi:"sợ hãi",t:"feelings"},
-
-  // Jobs 👮
-  {w:"doctor",e:"🧑‍⚕️",vi:"bác sĩ",t:"jobs"},
-  {w:"pilot",e:"🧑‍✈️",vi:"phi công",t:"jobs"},
-  {w:"police",e:"👮",vi:"cảnh sát",t:"jobs"},
-  {w:"chef",e:"🧑‍🍳",vi:"đầu bếp",t:"jobs"},
-  {w:"farmer",e:"🧑‍🌾",vi:"nông dân",t:"jobs"},
-  {w:"artist",e:"🧑‍🎨",vi:"họa sĩ",t:"jobs"},
-
-  // Shapes 🔺
-  {w:"circle",e:"⭕",vi:"hình tròn",t:"shapes"},
-  {w:"square",e:"⏹️",vi:"hình vuông",t:"shapes"},
-  {w:"triangle",e:"🔺",vi:"hình tam giác",t:"shapes"},
-  {w:"heart",e:"❤️",vi:"hình trái tim",t:"shapes"},
-  {w:"diamond",e:"🔷",vi:"hình thoi",t:"shapes"},
-];
-
-export const TOPICS = [
-  {id:"all",  name:"Tất cả",     e:"🌈"},
-  {id:"animals",name:"Động vật",  e:"🐾"},
-  {id:"food",  name:"Thức ăn",    e:"🍎"},
-  {id:"colors",name:"Màu sắc",    e:"🎨"},
-  {id:"numbers",name:"Con số",    e:"🔢"},
-  {id:"nature",name:"Thiên nhiên",e:"🌳"},
-  {id:"transport",name:"Xe cộ",   e:"🚗"},
-  {id:"things",name:"Đồ vật",     e:"🏠"},
-  {id:"body",  name:"Cơ thể",     e:"🧒"},
-  {id:"family",name:"Gia đình",   e:"👪"},
-  {id:"school",name:"Trường học", e:"🎒"},
-  {id:"weather",name:"Thời tiết", e:"☀️"},
-  {id:"sports",name:"Thể thao",   e:"⚽"},
-  {id:"clothes",name:"Quần áo",   e:"👕"},
-  {id:"feelings",name:"Cảm xúc",  e:"😊"},
-  {id:"jobs",  name:"Nghề nghiệp",e:"👮"},
-  {id:"shapes",name:"Hình khối",  e:"🔺"},
-  {id:"custom",name:"Của cha mẹ",  e:"📝"},
-];
-
-export const MERCHANDISE = {
-  pets: [
-    {id:"pet_dog", type:"pets", e:"🐶", name:"Cún Lông Xù", price: 80, desc:"Bạn cún thông minh, trung thành"},
-    {id:"pet_cat", type:"pets", e:"🐱", name:"Mèo Con Quý Phái", price: 80, desc:"Chú mèo đáng yêu thích nô đùa"},
-    {id:"pet_fox", type:"pets", e:"🦊", name:"Cáo Nhỏ Tinh Nghịch", price: 120, desc:"Thông minh và cực kỳ nhanh nhẹn"},
-    {id:"pet_unicorn", type:"pets", e:"🦄", name:"Kỳ Lân Phép Thuật", price: 200, desc:"Mang lại may mắn diệu kỳ"},
-    {id:"pet_dragon", type:"pets", e:"🐉", name:"Rồng Lửa Cổ Đại", price: 300, desc:"Oai vệ, phun ra lửa sao lấp lánh"},
-  ],
-  skins: [
-    {id:"theme_candy", type:"skins", e:"🍬", name:"Kẹo Ngọt Hồng", price: 60, desc:"Tông màu kẹo hồng đáng yêu", class:"theme-candy"},
-    {id:"theme_ocean", type:"skins", e:"🌊", name:"Đại Dương Xanh", price: 60, desc:"Màu xanh tươi mát của sóng biển", class:"theme-ocean"},
-    {id:"theme_forest", type:"skins", e:"🌲", name:"Rừng Rậm Kỳ Bí", price: 100, desc:"Màu xanh ngọc êm dịu, sảng khoái", class:"theme-forest"},
-    {id:"theme_sunset", type:"skins", e:"🌅", name:"Hoàng Hôn Ấm Áp", price: 120, desc:"Ánh sáng rực rỡ đầy năng lượng", class:"theme-sunset"},
-    {id:"theme_space", type:"skins", e:"🌌", name:"Vũ Trụ Huyền Bí", price: 250, desc:"Không gian tối lung linh đầy sao", class:"theme-space"},
-  ],
-  badges: [
-    {id:"first",   type:"badges", e:"🌟", name:"Khởi Đầu", price: 0, desc:"Có được khi bắt đầu hành trình"},
-    {id:"star50",  type:"badges", e:"✨", name:"Ngôi Sao Sáng", price: 50, desc:"Tích lũy được 50 sao lấp lánh"},
-    {id:"star100", type:"badges", e:"💫", name:"Vũ Trụ Sao", price: 100, desc:"Cực kỳ chăm chỉ vượt bậc"},
-    {id:"badge_rich", type:"badges", e:"💰", name:"Nhà Giàu", price: 150, desc:"Sở hữu hơn 200 đồng xu"},
-    {id:"badge_master", type:"badges", e:"👑", name:"Vua Trò Chơi", price: 250, desc:"Danh hiệu cho bé tài năng nhất"},
-  ]
-};
 
 const DB_KEY = "vhta_profiles_v2";
+let globalAudioCtx = null;
+let bgmInterval = null;
+
+const playBgmNode = (ctx) => {
+  try {
+    const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // Pentatonic scale (C, D, E, G, A, C)
+    const freq = notes[Math.floor(Math.random() * notes.length)];
+    
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.012, ctx.currentTime + 0.6); // slow attack
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.2); // slow release
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 2.4);
+  } catch (e) {}
+};
+
 
 export const GameProvider = ({ children }) => {
+  const speakPollRef = useRef(null);
+  const audioCacheRef = useRef({}); // word → audioUrl (from Dictionary API)
+
   const [profiles, setProfiles] = useState([]);
   const [currentProfile, setCurrentProfile] = useState(null);
   const [activeScreen, setActiveScreen] = useState('profiles');
@@ -223,6 +56,7 @@ export const GameProvider = ({ children }) => {
   const [toastKind, setToastKind] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('all');
   const [enVoice, setEnVoice] = useState(null);
+  const [allEnVoices, setAllEnVoices] = useState([]);
   const [ttsEngine, setTtsEngine] = useState('cloud'); // 'native' | 'cloud' (default to 'cloud' for maximum compatibility)
 
   // Expanded features: Vietnamese primary curriculum support
@@ -231,6 +65,15 @@ export const GameProvider = ({ children }) => {
   const [selectedUnit, setSelectedUnit] = useState(1);
   const [completedUnits, setCompletedUnits] = useState([]); // Array of string ids: "grade3_u1", "grade3_u2", etc.
   const [readStories, setReadStories] = useState([]); // Array of string ids of read stories
+  const [coinBoostRemaining, setCoinBoostRemaining] = useState(0);
+
+  useEffect(() => {
+    if (coinBoostRemaining <= 0) return;
+    const timer = setTimeout(() => {
+      setCoinBoostRemaining(prev => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [coinBoostRemaining]);
 
   // Parent Controls states
   const [screenTimeLimit, setScreenTimeLimit] = useState(null);
@@ -238,21 +81,205 @@ export const GameProvider = ({ children }) => {
   const [isTimeOut, setIsTimeOut] = useState(false);
   const [customVocab, setCustomVocab] = useState([]);
   const [learningAnalytics, setLearningAnalytics] = useState({});
+  const [customStories, setCustomStories] = useState([]);
+
+  // Load custom stories on mount
+  useEffect(() => {
+    try {
+      const rawStories = localStorage.getItem("vhta_custom_stories_v1");
+      if (rawStories) {
+        setCustomStories(JSON.parse(rawStories));
+      }
+    } catch (e) {
+      console.error("Lỗi đọc custom stories từ localStorage:", e);
+    }
+  }, []);
+
+  const addCustomStory = (story) => {
+    const updated = [...customStories, story];
+    setCustomStories(updated);
+    localStorage.setItem("vhta_custom_stories_v1", JSON.stringify(updated));
+    showToast(`Đã lưu truyện: ${story.title}! 📚`, 'good');
+  };
+
+  const deleteCustomStory = (storyId) => {
+    const updated = customStories.filter(s => s.id !== storyId);
+    setCustomStories(updated);
+    localStorage.setItem("vhta_custom_stories_v1", JSON.stringify(updated));
+    showToast("Đã xoá truyện tự chọn", "");
+  };
 
   // Streak Combo multipliers
   const [comboCount, setComboCount] = useState(0);
 
-  // Initialize Voices
+  // BGM & Daily Quests States
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  const [dailyQuests, setDailyQuests] = useState([]);
+
+  const initializeDailyQuests = (profileId) => {
+    try {
+      const today = new Date().toDateString();
+      const storageKey = `vhta_quests_${profileId}_${today}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setDailyQuests(JSON.parse(saved));
+      } else {
+        const shuffled = [...QUEST_POOL].sort(() => 0.5 - Math.random()).slice(0, 3);
+        const generated = shuffled.map((q, idx) => ({
+          id: `q_${Date.now()}_${idx}`,
+          type: q.type,
+          text: q.text,
+          target: q.target,
+          current: 0,
+          completed: false,
+          rewardStars: q.rewardStars,
+          rewardCoins: q.rewardCoins
+        }));
+        setDailyQuests(generated);
+        localStorage.setItem(storageKey, JSON.stringify(generated));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const updateQuestProgress = (type, amount = 1) => {
+    if (!currentProfile) return;
+    setDailyQuests(prevQuests => {
+      let updated = false;
+      const nextQuests = prevQuests.map(q => {
+        if (q.type === type && !q.completed) {
+          const nextVal = Math.min(q.current + amount, q.target);
+          const isCompletedNow = nextVal >= q.target;
+          if (isCompletedNow) {
+            setTimeout(() => {
+              addStarsAndCoins(q.rewardStars, q.rewardCoins, true);
+              showToast(`🏆 Nhiệm vụ hoàn thành: ${q.text} (+${q.rewardCoins} Xu, +${q.rewardStars} Sao)`, "good");
+              beep('win');
+            }, 100);
+          }
+          updated = true;
+          return { ...q, current: nextVal, completed: isCompletedNow };
+        }
+        return q;
+      });
+      if (updated) {
+        const today = new Date().toDateString();
+        localStorage.setItem(`vhta_quests_${currentProfile.id}_${today}`, JSON.stringify(nextQuests));
+      }
+      return nextQuests;
+    });
+  };
+
+  const toggleBgm = () => {
+    const ctx = globalAudioCtx || (window.AudioContext || window.webkitAudioContext ? new (window.AudioContext || window.webkitAudioContext)() : null);
+    if (!ctx) return;
+    if (!globalAudioCtx) globalAudioCtx = ctx;
+
+    if (isBgmPlaying) {
+      if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+      }
+      setIsBgmPlaying(false);
+    } else {
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      setIsBgmPlaying(true);
+      playBgmNode(ctx);
+      bgmInterval = setInterval(() => {
+        playBgmNode(ctx);
+      }, 2400);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (bgmInterval) {
+        clearInterval(bgmInterval);
+        bgmInterval = null;
+      }
+    };
+  }, []);
+
+  // Speech Recognition States
+  const isSpeechSupported = typeof window !== 'undefined' && (!!window.SpeechRecognition || !!window.webkitSpeechRecognition);
+  const [isListeningSpeech, setIsListeningSpeech] = useState(false);
+  const [speechTranscript, setSpeechTranscript] = useState('');
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    if (isSpeechSupported) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.lang = 'en-US';
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+
+  // Initialize Voices — prefer high-quality voices
   useEffect(() => {
     if (!("speechSynthesis" in window)) return;
+    const pickBestVoice = (vs) => {
+      const en = vs.filter(v => /^en/i.test(v.lang));
+      // Priority: Google WaveNet > Google > Microsoft Neural > Apple > any en-US
+      return (
+        en.find(v => /google.*us/i.test(v.name)) ||
+        en.find(v => /google/i.test(v.name)) ||
+        en.find(v => /microsoft.*aria|microsoft.*jenny|microsoft.*guy/i.test(v.name)) ||
+        en.find(v => /microsoft/i.test(v.name) && /en.US/i.test(v.lang)) ||
+        en.find(v => /samantha|alex|karen|daniel/i.test(v.name)) ||
+        en.find(v => /en-US/i.test(v.lang)) ||
+        en[0] ||
+        null
+      );
+    };
     const initVoices = () => {
       const vs = window.speechSynthesis.getVoices();
-      const voice = vs.find(v => /en-US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
-      setEnVoice(voice);
+      const en = vs.filter(v => /^en/i.test(v.lang));
+      setAllEnVoices(en);
+      setEnVoice(prev => prev || pickBestVoice(vs));
     };
     initVoices();
     window.speechSynthesis.onvoiceschanged = initVoices;
   }, []);
+
+  // Default shape for any profile — used for migration & new profile creation
+  const profileDefaults = {
+    picLevel: 1, memLevel: 1, arcLevel: 1, quizLevel: 1, wriLevel: 1,
+    customVocab: [], analytics: {}, completedUnits: [], readStories: [],
+    petFriendship: {}, pinCode: null, failedSeeds: [],
+    cefrLevel: 'A1', cefrMastery: { A1: 0, A2: 0, B1: 0, B2: 0 },
+    srsData: {},
+    onboardingDone: false,
+    // A3 Streak Quest fields
+    streakShieldCount: 0,
+    streakMilestonesClaimed: [],
+    dailyGamesPlayed: 0,
+    dailyGamesDate: null,
+    dailyChestClaimed: false,
+    // Personalization — per-child daily learning goal (games/day)
+    dailyGoal: 3,
+    // Personalization — per-child theme
+    prefersDark: null,          // null = follow device; true/false = explicit per child
+    themeColor: null,           // null = default palette; else accent hex e.g. '#9d6bff'
+    // A4 Friend Leaderboard fields
+    friendCode: null,           // 6-char code, auto-generated
+    friendCodes: [],            // list of added friend codes
+    weeklyStars: 0,
+    weeklyWeekKey: null,
+    // B3 Daily Story Adventure
+    dailyStory: null,           // { date, story, completed }
+    // B4 Phonics Heatmap — tracks pronunciation accuracy per phoneme
+    phonicsStats: {},           // { phonemeId: { attempts, success } }
+    // A1 Adventure Map — quest progression
+    adventureProgress: { completedNodes: [], starsByNode: {}, lastNodeId: null },
+  };
 
   // Load profiles from LocalStorage on mount
   useEffect(() => {
@@ -260,20 +287,31 @@ export const GameProvider = ({ children }) => {
       const raw = localStorage.getItem(DB_KEY);
       if (raw) {
         let data = JSON.parse(raw);
-        // Sync & Migrate all old profiles
-        data = data.map(p => ({
-          picLevel: 1,
-          memLevel: 1,
-          arcLevel: 1,
-          quizLevel: 1,
-          wriLevel: 1,
-          customVocab: [],
-          analytics: {},
-          selectedGrade: p.selectedGrade || (p.age === 'older' ? 'grade5' : (p.age === 'grade4' ? 'grade4' : (p.age === 'grade2' ? 'grade2' : (p.age === 'grade1' || p.age === 'young' ? 'grade1' : 'grade3')))),
-          completedUnits: [],
-          readStories: [],
-          ...p
-        }));
+        // Migrate: merge defaults first, then overlay saved data, but ignore null/undefined
+        // (some older profiles stored explicit null which would otherwise blow away defaults)
+        data = data.map(p => {
+          const merged = { ...profileDefaults };
+          merged.selectedGrade = p.age === 'older' ? 'grade5' : (p.age === 'grade4' ? 'grade4' : (p.age === 'grade2' ? 'grade2' : (p.age === 'grade1' || p.age === 'young' ? 'grade1' : 'grade3')));
+          for (const k of Object.keys(p || {})) {
+            const v = p[k];
+            if (v === null || v === undefined) continue; // skip nulls so defaults survive
+            merged[k] = v;
+          }
+          // Defensive: ensure nested objects exist
+          if (!merged.petFriendship || typeof merged.petFriendship !== 'object') merged.petFriendship = {};
+          if (!Array.isArray(merged.failedSeeds))    merged.failedSeeds = [];
+          if (!Array.isArray(merged.ownedItems))     merged.ownedItems = [];
+          if (!Array.isArray(merged.completedUnits)) merged.completedUnits = [];
+          if (!Array.isArray(merged.readStories))    merged.readStories = [];
+          if (!Array.isArray(merged.customVocab))    merged.customVocab = [];
+          if (!merged.srsData || typeof merged.srsData !== 'object') merged.srsData = {};
+          if (!merged.analytics || typeof merged.analytics !== 'object') merged.analytics = {};
+          if (!merged.cefrMastery || typeof merged.cefrMastery !== 'object') merged.cefrMastery = { A1: 0, A2: 0, B1: 0, B2: 0 };
+          // Ensure friend code exists
+          if (!merged.friendCode || typeof merged.friendCode !== 'string') merged.friendCode = generateFriendCode();
+          if (!Array.isArray(merged.friendCodes)) merged.friendCodes = [];
+          return merged;
+        });
 
         setProfiles(data);
         if (data.length > 0) {
@@ -284,10 +322,12 @@ export const GameProvider = ({ children }) => {
           setCompletedUnits(data[0].completedUnits || []);
           setReadStories(data[0].readStories || []);
           setSelectedGrade(data[0].selectedGrade || 'grade3');
+          initializeDailyQuests(data[0].id);
           setActiveScreen('home');
         }
       } else {
         const defaultProf = {
+          ...profileDefaults,
           id: "p_default",
           name: "Khủng Long",
           avatar: "🦖",
@@ -297,20 +337,13 @@ export const GameProvider = ({ children }) => {
           badges: ["first"],
           streak: 0,
           lastDay: null,
-          quizLevel: 1,
-          picLevel: 1,
-          memLevel: 1,
-          arcLevel: 1,
-          wriLevel: 1,
           ownedItems: ["first"],
           equippedPet: null,
           equippedSkin: null,
+          friendCode: generateFriendCode(),
+          friendCodes: [],
           lastDailyClaim: null,
-          customVocab: [],
-          analytics: {},
           selectedGrade: "grade3",
-          completedUnits: [],
-          readStories: []
         };
         setProfiles([defaultProf]);
         setCurrentProfile(defaultProf);
@@ -322,30 +355,152 @@ export const GameProvider = ({ children }) => {
     }
   }, []);
 
+  // Load eye-protection timer on mount
+  // Wipe legacy Azure key from any device that previously saved it
+  useEffect(() => {
+    try {
+      localStorage.removeItem('vhta_azure_key');
+      localStorage.removeItem('vhta_azure_region');
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const savedLimit = localStorage.getItem("vhta_timer_limit");
+      const savedRemaining = localStorage.getItem("vhta_timer_remaining");
+      if (savedLimit !== null) {
+        const limit = parseInt(savedLimit);
+        setScreenTimeLimit(limit);
+        if (savedRemaining !== null) {
+          const rem = parseInt(savedRemaining);
+          setScreenTimeRemaining(rem);
+          if (rem <= 0) {
+            setIsTimeOut(true);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi đọc timer từ localStorage:", e);
+    }
+  }, []);
+
   // Eye-protection timer ticking down
   useEffect(() => {
     if (screenTimeRemaining === null || isTimeOut) return;
     if (screenTimeRemaining <= 0) {
       setIsTimeOut(true);
+      localStorage.setItem("vhta_timer_remaining", "0");
       return;
     }
     const timer = setTimeout(() => {
-      setScreenTimeRemaining(prev => prev - 1);
+      const nextRemaining = screenTimeRemaining - 1;
+      setScreenTimeRemaining(nextRemaining);
+      localStorage.setItem("vhta_timer_remaining", nextRemaining.toString());
     }, 1000);
     return () => clearTimeout(timer);
   }, [screenTimeRemaining, isTimeOut]);
 
   const saveDatabase = (updatedProfiles) => {
-    setProfiles(updatedProfiles);
-    localStorage.setItem(DB_KEY, JSON.stringify(updatedProfiles));
+    // Stamp the active profile so cloud sync can resolve conflicts (last-write-wins)
+    const now = new Date().toISOString();
+    const stamped = updatedProfiles.map(p =>
+      p.id === currentProfile?.id ? { ...p, updatedAt: now } : p
+    );
+    setProfiles(stamped);
+    localStorage.setItem(DB_KEY, JSON.stringify(stamped));
   };
 
+  // Merge cloud profiles into local state (last-write-wins by updatedAt).
+  // Called after pulling from Supabase on login so multi-device data converges.
+  const mergeCloudProfiles = useCallback((cloudProfiles) => {
+    if (!Array.isArray(cloudProfiles) || cloudProfiles.length === 0) return;
+    setProfiles(localProfiles => {
+      const byId = new Map((localProfiles || []).map(p => [p.id, p]));
+      for (const cloud of cloudProfiles) {
+        if (!cloud?.id) continue;
+        const local = byId.get(cloud.id);
+        if (!local) { byId.set(cloud.id, cloud); continue; }
+        const localTs = Date.parse(local.updatedAt || 0) || 0;
+        const cloudTs = Date.parse(cloud.updatedAt || 0) || 0;
+        // Merge defaults so newly added fields never come back undefined
+        byId.set(cloud.id, cloudTs > localTs
+          ? { ...profileDefaults, ...cloud }
+          : { ...profileDefaults, ...local });
+      }
+      const merged = Array.from(byId.values());
+      localStorage.setItem(DB_KEY, JSON.stringify(merged));
+      // Refresh the active profile reference if it was updated from cloud
+      setCurrentProfile(cur => {
+        if (!cur) return cur;
+        const fresh = merged.find(p => p.id === cur.id);
+        return fresh || cur;
+      });
+      return merged;
+    });
+  }, []);
+
   const applySkin = (skinId) => {
+    // Preserve dark-mode class when changing skin
+    const wasDark = document.body.classList.contains('dark-mode');
     document.body.className = "";
     if (skinId) {
       const sk = MERCHANDISE.skins.find(x => x.id === skinId);
       if (sk && sk.class) document.body.classList.add(sk.class);
     }
+    if (wasDark) document.body.classList.add('dark-mode');
+  };
+
+  // Device-level fallback for dark mode when a profile hasn't set a preference
+  const devicePrefersDark = () => {
+    try {
+      const saved = localStorage.getItem('vhta_dark_mode');
+      if (saved === '1') return true;
+      if (saved === '0') return false;
+      return window.matchMedia?.('(prefers-color-scheme: dark)')?.matches || false;
+    } catch { return false; }
+  };
+
+  // Dark mode is now per-profile: prefersDark on the profile wins; null → device default
+  const [isDarkMode, setIsDarkModeState] = useState(devicePrefersDark);
+  useEffect(() => {
+    if (isDarkMode) document.body.classList.add('dark-mode');
+    else document.body.classList.remove('dark-mode');
+  }, [isDarkMode]);
+
+  // Apply a child's accent color as a CSS variable override
+  const applyThemeColor = (color) => {
+    const root = document.documentElement;
+    if (color) root.style.setProperty('--c-purple', color);
+    else root.style.removeProperty('--c-purple');
+  };
+
+  // Sync dark mode + theme color whenever the active profile changes
+  useEffect(() => {
+    if (!currentProfile) return;
+    const pref = currentProfile.prefersDark;
+    setIsDarkModeState(pref === null || pref === undefined ? devicePrefersDark() : !!pref);
+    applyThemeColor(currentProfile.themeColor || null);
+  }, [currentProfile?.id, currentProfile?.prefersDark, currentProfile?.themeColor]);
+
+  const toggleDarkMode = () => {
+    const next = !isDarkMode;
+    setIsDarkModeState(next);
+    try { localStorage.setItem('vhta_dark_mode', next ? '1' : '0'); } catch {}
+    // Persist the choice on the active profile so it follows the child across devices
+    if (currentProfile) {
+      const updated = { ...currentProfile, prefersDark: next };
+      setCurrentProfile(updated);
+      saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+    }
+  };
+
+  // Set this child's accent theme color (null resets to default palette)
+  const setThemeColor = (color) => {
+    if (!currentProfile) return;
+    applyThemeColor(color || null);
+    const updated = { ...currentProfile, themeColor: color || null };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
   };
 
   const selectProfile = (pId) => {
@@ -358,6 +513,7 @@ export const GameProvider = ({ children }) => {
       setCompletedUnits(prof.completedUnits || []);
       setReadStories(prof.readStories || []);
       setSelectedGrade(prof.selectedGrade || 'grade3');
+      initializeDailyQuests(prof.id);
       setActiveScreen('home');
       setComboCount(0);
       setStudyMode('free');
@@ -365,31 +521,24 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const createProfile = (name, avatar, age) => {
+  const createProfile = (name, avatar, age, pinCode = null) => {
     const newProf = {
+      ...profileDefaults,
       id: "p_" + Date.now(),
       name,
       avatar,
       age,
       stars: 0,
-      coins: 30, // Welcome gift
+      coins: 30,
       badges: ["first"],
       streak: 0,
       lastDay: null,
-      quizLevel: 1,
-      picLevel: 1,
-      memLevel: 1,
-      arcLevel: 1,
-      wriLevel: 1,
       ownedItems: ["first"],
       equippedPet: null,
       equippedSkin: null,
       lastDailyClaim: null,
-      customVocab: [],
-      analytics: {},
       selectedGrade: age === 'older' ? 'grade5' : (age === 'grade4' ? 'grade4' : (age === 'grade2' ? 'grade2' : (age === 'grade1' || age === 'young' ? 'grade1' : 'grade3'))),
-      completedUnits: [],
-      readStories: []
+      pinCode: pinCode || null,
     };
 
     const newProfiles = [...profiles, newProf];
@@ -403,15 +552,111 @@ export const GameProvider = ({ children }) => {
     applySkin(null);
     setComboCount(0);
     setStudyMode('free');
+    initializeDailyQuests(newProf.id);
     setActiveScreen('home');
     showToast(`Chào mừng ${name} gia nhập vương quốc! ✨`, 'good');
   };
 
-  const addStarsAndCoins = (stars, coins, isCorrect = true) => {
+  const setProfilePin = (profileId, pin) => {
+    const updatedProfiles = profiles.map(p => {
+      if (p.id === profileId) {
+        const updatedProfile = { ...p, pinCode: pin || null };
+        if (currentProfile && currentProfile.id === profileId) {
+          setCurrentProfile(updatedProfile);
+        }
+        return updatedProfile;
+      }
+      return p;
+    });
+    saveDatabase(updatedProfiles);
+    showToast(pin ? "Đã cài đặt mã khóa bảo mật! 🔐" : "Đã xóa mã khóa bảo mật! 🔓", "good");
+  };
+
+  const updateProfileFields = (profileId, fields) => {
+    const updatedProfiles = profiles.map(p => {
+      if (p.id === profileId) {
+        const updatedProfile = { ...p, ...fields };
+        if (currentProfile && currentProfile.id === profileId) {
+          setCurrentProfile(updatedProfile);
+        }
+        return updatedProfile;
+      }
+      return p;
+    });
+    saveDatabase(updatedProfiles);
+  };
+
+  const addFailedSeed = (wordObj) => {
+    if (!currentProfile || !wordObj) return;
+    const currentSeeds = currentProfile.failedSeeds || [];
+    if (currentSeeds.some(s => s.w === wordObj.w)) return;
+
+    const newSeed = {
+      w: wordObj.w,
+      e: wordObj.e,
+      vi: wordObj.vi,
+      t: wordObj.t || "general",
+      points: 0
+    };
+
+    const updated = {
+      ...currentProfile,
+      failedSeeds: [...currentSeeds, newSeed]
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === currentProfile.id ? updated : p);
+    setCurrentProfile(updated);
+    saveDatabase(updatedProfiles);
+  };
+
+  const growSeed = (wordW) => {
+    if (!currentProfile) return;
+    const currentSeeds = currentProfile.failedSeeds || [];
+    const updatedSeeds = currentSeeds.map(s => {
+      if (s.w === wordW) {
+        return { ...s, points: Math.min(s.points + 1, 3) };
+      }
+      return s;
+    });
+
+    const updated = {
+      ...currentProfile,
+      failedSeeds: updatedSeeds
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === currentProfile.id ? updated : p);
+    setCurrentProfile(updated);
+    saveDatabase(updatedProfiles);
+  };
+
+  const harvestSeed = (wordW) => {
+    if (!currentProfile) return;
+    const currentSeeds = currentProfile.failedSeeds || [];
+    const updatedSeeds = currentSeeds.filter(s => s.w !== wordW);
+
+    const updated = {
+      ...currentProfile,
+      failedSeeds: updatedSeeds
+    };
+
+    const updatedProfiles = profiles.map(p => p.id === currentProfile.id ? updated : p);
+    setCurrentProfile(updated);
+    saveDatabase(updatedProfiles);
+    
+    beep('win');
+    showToast("Chúc mừng bé đã thu hoạch quả ngọt thành công! 🧺✨ (+30 Sao, +15 Xu)", "good");
+  };
+
+  const addStarsAndCoins = (stars, coins, isCorrect = true, extraFields = null) => {
     if (!currentProfile) return;
 
-    const updated = { ...currentProfile };
+    const updated = { ...currentProfile, ...(extraFields || {}) };
     
+    // Equipped pet stage → coin boost (1.0 / 1.25 / 1.5 / 2.0)
+    const petId = updated.equippedPet;
+    const petFriendshipPoints = (updated.petFriendship && updated.petFriendship[petId]) || 0;
+    const petStage = petId ? getPetStage(petFriendshipPoints) : null;
+
     // Streak Combo double reward logic
     let earnCoins = coins;
     if (isCorrect) {
@@ -419,14 +664,36 @@ export const GameProvider = ({ children }) => {
       setComboCount(nextCombo);
       if (nextCombo >= 3) {
         earnCoins = coins * 2;
-        showToast(`Combo Lửa 🔥 Nhân đôi: +${earnCoins} Xu!`, 'good');
+        showToast(`🔥 Combo x${nextCombo}! Nhân đôi xu thưởng! 🪙`, 'good');
       }
     } else {
       setComboCount(0);
     }
 
+    if (petStage && petStage.boost > 1.0) {
+      earnCoins = Math.round(earnCoins * petStage.boost);
+      if (petStage.boost >= 2) {
+        showToast(`👑 Linh thú Huyền thoại: NHÂN ĐÔI Xu! 🪙✨`, 'good');
+      } else if (petStage.boost >= 1.5) {
+        showToast(`🌟 Linh thú Trưởng thành: +50% Xu! 🪙`, 'good');
+      }
+    }
+
+    if (coinBoostRemaining > 0) {
+      earnCoins = earnCoins * 2;
+      showToast(`🎟️ Bùa Nhân Đôi Xu đang hoạt động: Nhân đôi Xu! 🪙✨`, 'good');
+    }
+
     updated.stars += stars;
     updated.coins += earnCoins;
+
+    // Track weekly stars for friend leaderboard
+    const weekKey = currentWeekKey();
+    if (updated.weeklyWeekKey !== weekKey) {
+      updated.weeklyWeekKey = weekKey;
+      updated.weeklyStars = 0;
+    }
+    if (stars > 0) updated.weeklyStars = (updated.weeklyStars || 0) + stars;
 
     // Badges unlocking
     if (updated.stars >= 50 && !updated.ownedItems.includes("star50")) {
@@ -470,12 +737,12 @@ export const GameProvider = ({ children }) => {
   const levelUpGame = (gameKey) => {
     if (!currentProfile) return;
     const updated = { ...currentProfile };
-    
+
     if (updated[gameKey] < 5) {
       updated[gameKey] += 1;
       showToast(`🎉 Thăng Cấp! Bé đã lên Cấp ${updated[gameKey]}!`, 'good');
       beep('win');
-      
+
       if (gameKey === 'quizLevel' && updated.quizLevel >= 3 && !updated.ownedItems.includes("quiz3")) {
         updated.ownedItems.push("quiz3");
       }
@@ -484,6 +751,24 @@ export const GameProvider = ({ children }) => {
     setCurrentProfile(updated);
     const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
     saveDatabase(updatedProfiles);
+  };
+
+  // Adaptive difficulty: nudge a game's level toward the child's ability.
+  // Step-up is already handled in-game via levelUpGame on a perfect run; this
+  // adds a gentle step-DOWN when a session goes poorly so kids don't get stuck.
+  const autoAdjustLevel = (gameKey, scorePct) => {
+    if (!currentProfile) return;
+    const levelKey = getLevelKey(gameKey);
+    if (!levelKey) return;
+    const current = currentProfile[levelKey] || 1;
+    const delta = getLevelDelta(scorePct, current);
+    if (delta >= 0) return; // step-ups handled elsewhere; nothing to do
+    const next = Math.max(1, current + delta);
+    if (next === current) return;
+    const updated = { ...currentProfile, [levelKey]: next };
+    showToast(`🦉 Cú giảm độ khó một chút để bé luyện vững hơn nhé! (Cấp ${next})`, '');
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
   };
 
   const buyOrEquipItem = (item) => {
@@ -506,6 +791,10 @@ export const GameProvider = ({ children }) => {
         updated.ownedItems.push(item.id);
         showToast(`Chúc mừng bé có thêm ${item.name}! 🎉`, "good");
         beep('win');
+        // Confetti for legendary/epic purchases
+        if (item.tier === 'legendary' || item.tier === 'epic') {
+          try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+        }
       } else {
         showToast("Bé cần tích lũy thêm xu nhé! 🥺", "bad");
         beep('bad');
@@ -517,18 +806,57 @@ export const GameProvider = ({ children }) => {
     saveDatabase(updatedProfiles);
   };
 
-  const claimDailyChest = (luckyStars, luckyCoins) => {
-    if (!currentProfile) return;
-    const today = new Date().toDateString();
-    
-    const updated = { ...currentProfile };
-    updated.lastDailyClaim = today;
-    setCurrentProfile(updated);
+  const feedPet = (foodName, cost, points) => {
+    if (!currentProfile) return false;
+    const petId = currentProfile.equippedPet;
+    if (!petId) {
+      showToast("Hãy trang bị một thú cưng đồng hành trước nhé! 🐾", "bad");
+      beep('bad');
+      return false;
+    }
 
+    if (currentProfile.coins < cost) {
+      showToast("Bé không đủ xu để mua món ăn này! 🥺", "bad");
+      beep('bad');
+      return false;
+    }
+
+    const updated = { ...currentProfile };
+    updated.coins -= cost;
+    if (!updated.petFriendship) updated.petFriendship = {};
+    
+    const currentPoints = updated.petFriendship[petId] || 0;
+    const nextPoints = Math.min(currentPoints + points, 100);
+    updated.petFriendship[petId] = nextPoints;
+
+    // Detect stage-up
+    const oldStage = getPetStage(currentPoints).id;
+    const newStage = getPetStage(nextPoints).id;
+    const stageUp = newStage > oldStage;
+
+    setCurrentProfile(updated);
     const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
     saveDatabase(updatedProfiles);
-    
-    addStarsAndCoins(luckyStars, luckyCoins);
+    beep('win');
+
+    if (stageUp) {
+      const newStageObj = getPetStage(nextPoints);
+      showToast(`🎉 LINH THÚ TIẾN HÓA! Lên cấp "${newStageObj.name}"! ${newStageObj.boostLabel || ''}`, 'good');
+      beep('magic');
+      try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+    } else {
+      showToast(`Bé đã cho Pet ăn ${foodName}! Thân thiết +${points} 🍎✨`, 'good');
+    }
+    return { success: true, stageUp, newStage };
+  };
+
+  const claimDailyChest = (luckyStars, luckyCoins) => {
+    if (!currentProfile) return;
+    if (currentProfile.lastDailyClaim === new Date().toDateString()) return; // already claimed
+    // Atomic update: stars/coins + lastDailyClaim in one profile write
+    addStarsAndCoins(luckyStars, luckyCoins, true, {
+      lastDailyClaim: new Date().toDateString(),
+    });
   };
 
   const updateStreak = () => {
@@ -537,14 +865,226 @@ export const GameProvider = ({ children }) => {
     if (currentProfile.lastDay === today) return;
 
     const updated = { ...currentProfile };
-    const yest = new Date(Date.now() - 86400000).toDateString();
+    const yest       = new Date(Date.now() - 86400000).toDateString();
+    const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
+
     if (currentProfile.lastDay === yest) {
       updated.streak += 1;
+    } else if (currentProfile.lastDay === twoDaysAgo && (updated.streakShieldCount || 0) > 0) {
+      // Skipped exactly 1 day — auto-use a shield to preserve the streak
+      updated.streakShieldCount = (updated.streakShieldCount || 0) - 1;
+      updated.streak += 1;
+      showToast(`🛡️ Khiên Streak đã giữ chuỗi học của bé! Còn ${updated.streakShieldCount} khiên.`, 'good');
     } else {
       updated.streak = 1;
     }
     updated.lastDay = today;
-    
+
+    // Reset daily-games counter for the new day
+    if (updated.dailyGamesDate !== today) {
+      updated.dailyGamesDate = today;
+      updated.dailyGamesPlayed = 0;
+      updated.dailyChestClaimed = false;
+    }
+
+    // Claim milestone reward if newly reached
+    const milestone = getMilestoneToClaim(updated.streak, updated.streakMilestonesClaimed || []);
+    if (milestone) {
+      updated.streakMilestonesClaimed = [...(updated.streakMilestonesClaimed || []), milestone.days];
+      updated.coins += milestone.reward.coins;
+      updated.stars += milestone.reward.stars;
+      if (milestone.reward.shield > 0) {
+        updated.streakShieldCount = (updated.streakShieldCount || 0) + milestone.reward.shield;
+      }
+      const shieldMsg = milestone.reward.shield > 0 ? ` + ${milestone.reward.shield} 🛡️` : '';
+      showToast(`🎉 MỐC ${milestone.days} NGÀY: ${milestone.emoji} ${milestone.name}! +${milestone.reward.coins}🪙 +${milestone.reward.stars}⭐${shieldMsg}`, 'good');
+    }
+
+    setCurrentProfile(updated);
+    const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
+    saveDatabase(updatedProfiles);
+  };
+
+  // ── A1 Adventure Map ────────────────────────────────────────
+  const completeAdventureNode = (nodeId, gameStars = 0) => {
+    if (!currentProfile || !nodeId) return;
+    const adv = currentProfile.adventureProgress || { completedNodes: [], starsByNode: {} };
+    const completed = adv.completedNodes || [];
+    const alreadyDone = completed.includes(nodeId);
+
+    const newCompleted = alreadyDone ? completed : [...completed, nodeId];
+    const newStars = { ...(adv.starsByNode || {}) };
+    // Keep best stars
+    if (!newStars[nodeId] || gameStars > newStars[nodeId]) {
+      newStars[nodeId] = gameStars;
+    }
+    const updated = {
+      ...currentProfile,
+      adventureProgress: {
+        completedNodes: newCompleted,
+        starsByNode: newStars,
+        lastNodeId: nodeId,
+      },
+    };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+
+    if (!alreadyDone) {
+      showToast(`🗺️ Hoàn thành "${nodeId}"! Mở khóa ô tiếp theo.`, 'good');
+      try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+    }
+  };
+
+  // Claim the one-time completion reward for a fully-cleared chapter
+  const claimChapterReward = (chapterId, reward) => {
+    if (!currentProfile || !chapterId || !reward) return false;
+    const adv = currentProfile.adventureProgress || { completedNodes: [], starsByNode: {} };
+    const claimed = adv.claimedChapters || [];
+    if (claimed.includes(chapterId)) return false;
+
+    // Grant loot + persist claim atomically via extraFields (avoids stale-state overwrite)
+    addStarsAndCoins(reward.stars, reward.coins, false, {
+      adventureProgress: { ...adv, claimedChapters: [...claimed, chapterId] },
+    });
+    showToast(`🎁 Phần thưởng chương: +${reward.stars}⭐ +${reward.coins}🪙!`, 'good');
+    try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+    return true;
+  };
+
+  // ── B4 Phonics Heatmap ──────────────────────────────────────
+  // Updates phoneme stats based on word-level pronunciation success
+  const recordPronunciation = async (word, success) => {
+    if (!currentProfile || !word) return;
+    const cleanWord = word.toLowerCase().trim();
+    if (!cleanWord) return;
+    let ipa = null;
+    try {
+      const info = await getIpa(cleanWord);
+      ipa = info?.ipa;
+    } catch {}
+    if (!ipa) return;
+    const phonemes = extractPhonemesFromIpa(ipa);
+    if (phonemes.length === 0) return;
+
+    const stats = { ...(currentProfile.phonicsStats || {}) };
+    for (const id of phonemes) {
+      if (!stats[id]) stats[id] = { attempts: 0, success: 0 };
+      stats[id].attempts += 1;
+      if (success) stats[id].success += 1;
+    }
+    const updated = { ...currentProfile, phonicsStats: stats };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+  };
+
+  // ── B3 Daily Story Adventure ────────────────────────────────
+  const saveDailyStory = (story) => {
+    if (!currentProfile) return;
+    const today = new Date().toDateString();
+    const updated = {
+      ...currentProfile,
+      dailyStory: { date: today, story, completed: false },
+    };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+  };
+
+  const markDailyStoryComplete = () => {
+    if (!currentProfile || !currentProfile.dailyStory) return;
+    if (currentProfile.dailyStory.completed) return;
+    // Reward: 30 stars + 15 coins for finishing a story
+    addStarsAndCoins(30, 15, true, {
+      dailyStory: { ...currentProfile.dailyStory, completed: true },
+    });
+    showToast('📖 Đọc xong truyện hôm nay! +30⭐ +15🪙', 'good');
+    try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+  };
+
+  // Add a friend by code
+  const addFriend = (rawCode) => {
+    if (!currentProfile) return { ok: false, error: 'no_profile' };
+    const code = (rawCode || '').trim().toUpperCase();
+    if (!isValidFriendCode(code)) return { ok: false, error: 'invalid_code' };
+    if (code === currentProfile.friendCode) return { ok: false, error: 'self' };
+    const existing = currentProfile.friendCodes || [];
+    if (existing.includes(code)) return { ok: false, error: 'duplicate' };
+    if (existing.length >= 20) return { ok: false, error: 'limit' };
+    const updated = { ...currentProfile, friendCodes: [...existing, code] };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+    return { ok: true };
+  };
+
+  const removeFriend = (code) => {
+    if (!currentProfile) return;
+    const filtered = (currentProfile.friendCodes || []).filter(c => c !== code);
+    const updated = { ...currentProfile, friendCodes: filtered };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+  };
+
+  // Record a completed game — drives streak bump + daily mini-streak (3 games → bonus chest)
+  // Personalization — set this child's daily learning goal (games per day)
+  const setDailyGoal = (n) => {
+    if (!currentProfile) return;
+    const goal = Math.max(1, Math.min(20, Math.round(n) || 1));
+    const updated = { ...currentProfile, dailyGoal: goal };
+    setCurrentProfile(updated);
+    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+  };
+
+  const recordGameFinish = () => {
+    if (!currentProfile) return;
+    const today      = new Date().toDateString();
+    const yest       = new Date(Date.now() - 86400000).toDateString();
+    const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
+
+    const updated = { ...currentProfile };
+
+    // ── 1. Streak bump (only once per calendar day) ──
+    if (updated.lastDay !== today) {
+      if (updated.lastDay === yest) {
+        updated.streak = (updated.streak || 0) + 1;
+      } else if (updated.lastDay === twoDaysAgo && (updated.streakShieldCount || 0) > 0) {
+        // Skipped exactly 1 day — auto-use shield
+        updated.streakShieldCount -= 1;
+        updated.streak = (updated.streak || 0) + 1;
+        showToast(`🛡️ Khiên Streak đã giữ chuỗi học! Còn ${updated.streakShieldCount} khiên.`, 'good');
+      } else {
+        updated.streak = 1;
+      }
+      updated.lastDay = today;
+
+      // Check milestone reward
+      const milestone = getMilestoneToClaim(updated.streak, updated.streakMilestonesClaimed || []);
+      if (milestone) {
+        updated.streakMilestonesClaimed = [...(updated.streakMilestonesClaimed || []), milestone.days];
+        updated.coins += milestone.reward.coins;
+        updated.stars += milestone.reward.stars;
+        if (milestone.reward.shield > 0) {
+          updated.streakShieldCount = (updated.streakShieldCount || 0) + milestone.reward.shield;
+        }
+        const shieldMsg = milestone.reward.shield > 0 ? ` + ${milestone.reward.shield} 🛡️` : '';
+        showToast(`🎉 MỐC ${milestone.days} NGÀY: ${milestone.emoji} ${milestone.name}! +${milestone.reward.coins}🪙 +${milestone.reward.stars}⭐${shieldMsg}`, 'good');
+        try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+      }
+    }
+
+    // ── 2. Daily mini-streak (3 games → bonus chest) ──
+    if (updated.dailyGamesDate !== today) {
+      updated.dailyGamesDate = today;
+      updated.dailyGamesPlayed = 0;
+      updated.dailyChestClaimed = false;
+    }
+    updated.dailyGamesPlayed = (updated.dailyGamesPlayed || 0) + 1;
+
+    if (updated.dailyGamesPlayed >= 3 && !updated.dailyChestClaimed) {
+      updated.dailyChestClaimed = true;
+      updated.coins += 50;
+      updated.stars += 20;
+      showToast('🎁 RƯƠNG NGÀY: 3 game hôm nay! +50 🪙 +20 ⭐', 'good');
+    }
+
     setCurrentProfile(updated);
     const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
     saveDatabase(updatedProfiles);
@@ -593,100 +1133,285 @@ export const GameProvider = ({ children }) => {
     saveDatabase(updatedProfiles);
   };
 
-  const speak = (text, onBoundary, onEnd) => {
-    if (!text || !text.trim()) { if (onEnd) onEnd(); return; }
+  const speakWithTTS = (text, onBoundary, onEnd) => {
     if (!("speechSynthesis" in window)) { if (onEnd) onEnd(); return; }
-
-    // Cancel previous speech cleanly
+    if (speakPollRef.current) { clearInterval(speakPollRef.current); speakPollRef.current = null; }
     try { window.speechSynthesis.cancel(); } catch(e) {}
+
+    // Estimate a safe max duration: ~80ms/char + 4s buffer. Caps at 30s.
+    const estMs = Math.min(30000, 4000 + (text || '').length * 80);
 
     setTimeout(() => {
       try {
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "en-US";
-        u.rate = 0.82;
+        u.rate = 0.88;
         u.pitch = 1.05;
         u.volume = 1.0;
-        // Do NOT manually set voice — let the browser pick the default en-US voice.
-        // Manually setting voice is the #1 cause of silent failure on Chrome/macOS.
+
+        const voice = enVoice || (() => {
+          const vs = window.speechSynthesis.getVoices();
+          return vs.find(v => /google.*us/i.test(v.name)) ||
+            vs.find(v => /google/i.test(v.name)) ||
+            vs.find(v => /microsoft/i.test(v.name) && /en-US/i.test(v.lang)) ||
+            vs.find(v => /en-US/i.test(v.lang)) ||
+            vs.find(v => /^en/i.test(v.lang));
+        })();
+        if (voice) u.voice = voice;
 
         if (onBoundary) u.onboundary = onBoundary;
 
         let finished = false;
-        let pollInterval = null;
-
+        let safetyTimer = null;
         const finish = () => {
           if (finished) return;
           finished = true;
-          if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+          if (speakPollRef.current) { clearInterval(speakPollRef.current); speakPollRef.current = null; }
+          if (safetyTimer) { clearTimeout(safetyTimer); safetyTimer = null; }
           if (onEnd) onEnd();
         };
-
         u.onend = finish;
-        u.onerror = (e) => {
-          if (e.error === 'canceled' || e.error === 'interrupted') return;
-          finish();
-        };
+        u.onerror = (e) => { if (e.error !== 'canceled' && e.error !== 'interrupted') finish(); };
 
-        // Poll every 1s: if speaking stopped but onend never fired, call finish manually.
-        // Also handles Chrome/macOS bug where speech ends silently.
+        // Safety: if Chrome/iOS speech engine hangs, force-finish after estMs
+        safetyTimer = setTimeout(() => {
+          if (finished) return;
+          try { window.speechSynthesis.cancel(); } catch {}
+          finish();
+        }, estMs);
+
         let pollCount = 0;
-        pollInterval = setInterval(() => {
-          if (finished) { clearInterval(pollInterval); return; }
+        speakPollRef.current = setInterval(() => {
+          if (finished) { clearInterval(speakPollRef.current); speakPollRef.current = null; return; }
           pollCount++;
           if (!window.speechSynthesis.speaking) {
-            // Not speaking anymore — finished (onend may not have fired on Chrome)
-            clearInterval(pollInterval);
-            pollInterval = null;
-            finish();
+            clearInterval(speakPollRef.current); speakPollRef.current = null; finish();
           } else if (pollCount % 10 === 0) {
-            // Every 10 seconds: kick Chrome to prevent auto-pause after 15s
-            window.speechSynthesis.pause();
-            window.speechSynthesis.resume();
+            window.speechSynthesis.pause(); window.speechSynthesis.resume();
           }
         }, 1000);
 
         window.speechSynthesis.resume();
         window.speechSynthesis.speak(u);
-      } catch(e) {
-        if (onEnd) onEnd();
-      }
-    }, 200);
+      } catch(e) { if (onEnd) onEnd(); }
+    }, 60);
   };
 
+  const speak = (text, onBoundary, onEnd) => {
+    if (!text || !text.trim()) { if (onEnd) onEnd(); return; }
+
+    const word = text.trim().toLowerCase();
+    const isSingleWord = /^[a-z'-]+$/.test(word);
+
+    // For single words: try Dictionary API real audio first
+    if (isSingleWord) {
+      const cached = audioCacheRef.current[word];
+
+      const playAudio = (url) => {
+        if (!url) { speakWithTTS(text, onBoundary, onEnd); return; }
+        try {
+          const audio = new Audio(url);
+          audio.playbackRate = 0.85;
+          audio.onended = () => { if (onEnd) onEnd(); };
+          audio.onerror = () => speakWithTTS(text, onBoundary, onEnd);
+          audio.play().catch(() => speakWithTTS(text, onBoundary, onEnd));
+        } catch {
+          speakWithTTS(text, onBoundary, onEnd);
+        }
+      };
+
+      if (cached !== undefined) {
+        playAudio(cached);
+      } else {
+        // Fetch from Dictionary API, play TTS immediately while fetching
+        speakWithTTS(text, onBoundary, onEnd);
+        // Prefetch for next time
+        getIpa(word).then(({ audioUrl }) => {
+          audioCacheRef.current[word] = audioUrl || null;
+        }).catch(() => { audioCacheRef.current[word] = null; });
+      }
+      return;
+    }
+
+    // Sentences: use TTS directly
+    speakWithTTS(text, onBoundary, onEnd);
+  };
+
+  // Richer sound effect library — pure Web Audio (no asset files needed)
   const beep = (type) => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.connect(g);
-      g.connect(ctx.destination);
+      if (!globalAudioCtx) globalAudioCtx = new AudioCtx();
+      const ctx = globalAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
       const now = ctx.currentTime;
-      if (type === "good") {
-        o.type = "triangle";
-        o.frequency.setValueAtTime(523, now);
-        o.frequency.setValueAtTime(659, now + .08);
-        o.frequency.setValueAtTime(784, now + .16);
-      } else if (type === "bad") {
-        o.type = "sawtooth";
-        o.frequency.setValueAtTime(220, now);
-        o.frequency.setValueAtTime(130, now + .14);
-      } else if (type === "win") {
-        o.type = "triangle";
-        [523, 659, 784, 1046, 1318].forEach((f, i) => o.frequency.setValueAtTime(f, now + i * .1));
-      } else {
-        o.type = "sine";
-        o.frequency.setValueAtTime(440, now);
+
+      // Helper: play a tone segment with attack/release envelope
+      const tone = (freq, start, dur, opts = {}) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = opts.type || 'triangle';
+        o.frequency.setValueAtTime(freq, now + start);
+        if (opts.endFreq) {
+          o.frequency.exponentialRampToValueAtTime(opts.endFreq, now + start + dur);
+        }
+        const peak = opts.gain ?? 0.22;
+        g.gain.setValueAtTime(0.0001, now + start);
+        g.gain.exponentialRampToValueAtTime(peak, now + start + Math.min(0.02, dur * 0.3));
+        g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + start);
+        o.stop(now + start + dur + 0.02);
+      };
+
+      // Helper: noise burst (for soft pops / whoosh)
+      const noise = (start, dur, opts = {}) => {
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(opts.gain || 0.15, now + start);
+        const filter = ctx.createBiquadFilter();
+        filter.type = opts.filterType || 'bandpass';
+        filter.frequency.value = opts.freq || 1000;
+        filter.Q.value = opts.q || 1;
+        src.connect(filter); filter.connect(g); g.connect(ctx.destination);
+        src.start(now + start);
+        src.stop(now + start + dur);
+      };
+
+      switch (type) {
+        case 'good':
+          // 3-note happy ascent
+          tone(523, 0,    0.10, { type: 'triangle' });
+          tone(659, 0.08, 0.10, { type: 'triangle' });
+          tone(784, 0.16, 0.16, { type: 'triangle' });
+          break;
+        case 'bad':
+          tone(220, 0,    0.12, { type: 'sawtooth', endFreq: 110, gain: 0.18 });
+          break;
+        case 'win':
+          // Sparkle fanfare: ascending arpeggio + bell
+          [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, i * 0.08, 0.12, { type: 'triangle' }));
+          tone(1568, 0.5, 0.5, { type: 'sine', gain: 0.18 });
+          break;
+        case 'pop':
+          // Bubble pop (used for taps/clicks)
+          tone(800, 0,    0.05, { type: 'sine', endFreq: 1400, gain: 0.15 });
+          break;
+        case 'bell':
+          // Bell ring for notifications
+          tone(880,  0,    0.45, { type: 'sine', gain: 0.20 });
+          tone(1320, 0.02, 0.35, { type: 'sine', gain: 0.12 });
+          tone(1760, 0.04, 0.25, { type: 'sine', gain: 0.08 });
+          break;
+        case 'swoosh':
+          // Swoosh (used for transitions/flying)
+          noise(0, 0.3, { filterType: 'bandpass', freq: 2000, q: 0.7, gain: 0.12 });
+          break;
+        case 'magic':
+          // Magical sparkle for level-up / evolution
+          [523, 698, 880, 1175, 1568].forEach((f, i) => tone(f, i * 0.04, 0.20, { type: 'sine', gain: 0.18 }));
+          tone(2093, 0.25, 0.6, { type: 'triangle', gain: 0.12 });
+          break;
+        case 'square':
+        case 'sine':
+          // UI click (small, soft)
+          tone(440, 0, 0.08, { type: type === 'square' ? 'square' : 'sine', gain: 0.10 });
+          break;
+        default:
+          tone(440, 0, 0.10, { type: 'sine', gain: 0.12 });
       }
-      g.gain.setValueAtTime(.0001, now);
-      g.gain.exponentialRampToValueAtTime(.25, now + .02);
-      g.gain.exponentialRampToValueAtTime(.0001, now + (type === "win" ? .65 : .25));
-      o.start(now);
-      o.stop(now + (type === "win" ? .7 : .3));
-    } catch (e) {}
+    } catch {}
   };
+  const startListeningSpeech = (targetWord, onCorrect, onIncorrect) => {
+    if (!isSpeechSupported || !recognitionRef.current) {
+      showToast("Trình duyệt không hỗ trợ luyện nói tiếng Anh! 🎙️", "bad");
+      return;
+    }
+
+    // Stop speaking first to prevent feedback loop
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+
+    const rec = recognitionRef.current;
+    
+    // Reset callbacks cleanly
+    rec.onstart = null;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+
+    rec.onstart = () => {
+      setIsListeningSpeech(true);
+      setSpeechTranscript('');
+    };
+
+    rec.onresult = (event) => {
+      if (event.results && event.results[0]) {
+        const transcript = event.results[0][0].transcript;
+        setSpeechTranscript(transcript);
+        
+        const spokenClean = transcript.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+        const targetClean = targetWord.toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+        
+        const success = spokenClean === targetClean || spokenClean.includes(targetClean) || targetClean.includes(spokenClean);
+        // B4: track per-phoneme pronunciation accuracy
+        recordPronunciation(targetWord, success);
+        if (success) {
+          updateQuestProgress('speech', 1);
+          if (onCorrect) onCorrect(transcript);
+        } else {
+          if (onIncorrect) onIncorrect(transcript);
+        }
+      }
+    };
+
+    rec.onerror = (e) => {
+      setIsListeningSpeech(false);
+      if (e.error === 'no-speech') {
+        showToast("Bé ơi, hình như bé chưa nói gì nè! 🎙️", "bad");
+      } else if (e.error === 'audio-capture') {
+        showToast("Không tìm thấy micro thu âm! 🎙️", "bad");
+      } else if (e.error === 'not-allowed') {
+        showToast("Bé hãy cho phép sử dụng Micro ở góc trình duyệt nhé! 🎙️", "bad");
+      } else {
+        if (onIncorrect) onIncorrect(`Lỗi: ${e.error}`);
+      }
+    };
+
+    rec.onend = () => {
+      setIsListeningSpeech(false);
+    };
+
+    try {
+      rec.start();
+    } catch (err) {
+      // If already started, force stop and restart
+      try {
+        rec.stop();
+      } catch (stopErr) {}
+      
+      setTimeout(() => {
+        try { rec.start(); } catch (retryErr) {}
+      }, 200);
+    }
+  };
+
+  const stopListeningSpeech = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    setIsListeningSpeech(false);
+  };
+
 
   // Parental customization actions
   const addCustomWord = (word, emoji, viMeaning) => {
@@ -725,8 +1450,13 @@ export const GameProvider = ({ children }) => {
     setScreenTimeLimit(minutes);
     if (minutes === null) {
       setScreenTimeRemaining(null);
+      localStorage.removeItem("vhta_timer_limit");
+      localStorage.removeItem("vhta_timer_remaining");
     } else {
-      setScreenTimeRemaining(minutes * 60);
+      const secs = minutes * 60;
+      setScreenTimeRemaining(secs);
+      localStorage.setItem("vhta_timer_limit", minutes.toString());
+      localStorage.setItem("vhta_timer_remaining", secs.toString());
     }
     setIsTimeOut(false);
     showToast(`Đã đặt giới hạn: ${minutes ? `${minutes} phút` : "Không giới hạn"}`, 'good');
@@ -754,6 +1484,50 @@ export const GameProvider = ({ children }) => {
     setIsTimeOut(false);
   };
 
+  // Returns all vocab for a given CEFR level (with lazy-loading stubs for A2+)
+  const getCefrVocab = async (level = 'A1') => {
+    if (level === 'A1') return VOCAB_A1;
+    try {
+      if (level === 'A2') {
+        const mod = await import('../data/vocab_a2.json');
+        return mod.default;
+      }
+      if (level === 'B1') {
+        const mod = await import('../data/vocab_b1.json');
+        return mod.default;
+      }
+      if (level === 'B2') {
+        const mod = await import('../data/vocab_b2.json');
+        return mod.default;
+      }
+    } catch {
+      return [];
+    }
+    return [];
+  };
+
+  // Returns vocab for SRS review: words due today + new words up to dailyNewLimit
+  const getDueSrsWords = (dailyNewLimit = 10) => {
+    if (!currentProfile) return { due: [], newWords: [] };
+    const srsData = currentProfile.srsData || {};
+    const allVocab = [...VOCAB_A1, ...VOCAB];
+    const uniqueMap = new Map();
+    for (const w of allVocab) uniqueMap.set(w.w.toLowerCase(), w);
+    const { due, newWords } = getDueWords(srsData, Array.from(uniqueMap.values()));
+    return { due, newWords: newWords.slice(0, dailyNewLimit) };
+  };
+
+  // Called after each game answer to update SRS card for a word
+  const updateSrsCard = (wordW, quality) => {
+    if (!currentProfile) return;
+    const key = wordW.toLowerCase();
+    const srsData = currentProfile.srsData || {};
+    const existingCard = srsData[key] || getDefaultCard();
+    const updatedCard = reviewWord(existingCard, quality);
+    const updatedSrsData = { ...srsData, [key]: updatedCard };
+    updateProfileFields(currentProfile.id, { srsData: updatedSrsData });
+  };
+
   const getCombinedVocab = () => {
     if (studyMode === 'school') {
       // Return vocabulary of selected SGK Unit!
@@ -761,7 +1535,45 @@ export const GameProvider = ({ children }) => {
       const currentUnitObj = gradeUnits.find(u => u.unit === selectedUnit) || { words: [] };
       return currentUnitObj.words;
     }
-    return [...VOCAB, ...customVocab];
+    
+    // In free play, extract ALL words from all grades in VIETNAM_CURRICULUM
+    const curriculumWords = [];
+    const uniqueWordSet = new Set();
+    
+    // 1. Add custom words first so they take precedence
+    customVocab.forEach(item => {
+      curriculumWords.push(item);
+      uniqueWordSet.add(item.w.toLowerCase().trim());
+    });
+    
+    // 2. Add baseline VOCAB words
+    VOCAB.forEach(item => {
+      const cleanW = item.w.toLowerCase().trim();
+      if (!uniqueWordSet.has(cleanW)) {
+        curriculumWords.push(item);
+        uniqueWordSet.add(cleanW);
+      }
+    });
+
+    // 3. Add all words from VIETNAM_CURRICULUM (Grade 1 to 5)
+    Object.keys(VIETNAM_CURRICULUM).forEach(gradeKey => {
+      VIETNAM_CURRICULUM[gradeKey].forEach(unit => {
+        unit.words.forEach(item => {
+          const cleanW = item.w.toLowerCase().trim();
+          if (!uniqueWordSet.has(cleanW)) {
+            curriculumWords.push({
+              w: item.w,
+              e: item.e,
+              vi: item.vi,
+              t: item.t || "curriculum"
+            });
+            uniqueWordSet.add(cleanW);
+          }
+        });
+      });
+    });
+    
+    return curriculumWords;
   };
 
   return (
@@ -777,10 +1589,28 @@ export const GameProvider = ({ children }) => {
       setSelectedTopic,
       selectProfile,
       createProfile,
+      setProfilePin,
+      updateProfileFields,
       addStarsAndCoins,
       buyOrEquipItem,
       claimDailyChest,
       updateStreak,
+      recordGameFinish,
+      addFriend,
+      removeFriend,
+      saveDailyStory,
+      markDailyStoryComplete,
+      recordPronunciation,
+      completeAdventureNode,
+      claimChapterReward,
+      mergeCloudProfiles,
+      autoAdjustLevel,
+      setDailyGoal,
+      setThemeColor,
+      weakTopics: getWeakTopics(learningAnalytics || {}),
+      nextFocusTopic: getNextFocusTopic(learningAnalytics || {}),
+      isDarkMode,
+      toggleDarkMode,
       speak,
       beep,
       ttsEngine,
@@ -807,6 +1637,9 @@ export const GameProvider = ({ children }) => {
       addCustomWord,
       removeCustomWord,
       learningAnalytics,
+      customStories,
+      addCustomStory,
+      deleteCustomStory,
       getCombinedVocab,
 
       // Primary School Curriculum Mode variables
@@ -819,7 +1652,38 @@ export const GameProvider = ({ children }) => {
       completedUnits,
       completeUnit,
       readStories,
-      completeStory
+      completeStory,
+
+      // Speech Recognition variables
+      isSpeechSupported,
+      isListeningSpeech,
+      speechTranscript,
+      startListeningSpeech,
+      stopListeningSpeech,
+      
+      // Sprouting Greenhouse & Boosters exports
+      addFailedSeed,
+      growSeed,
+      harvestSeed,
+      coinBoostRemaining,
+      setCoinBoostRemaining,
+
+      // BGM and Daily Quests
+      isBgmPlaying,
+      toggleBgm,
+      dailyQuests,
+      updateQuestProgress,
+
+      // CEFR vocab & SRS
+      getCefrVocab,
+      getDueSrsWords,
+      updateSrsCard,
+
+      // English Voice states
+      enVoice,
+      setEnVoice,
+      allEnVoices,
+      feedPet
     }}>
       {children}
     </GameContext.Provider>

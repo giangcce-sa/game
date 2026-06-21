@@ -13,7 +13,19 @@ export default function StoryScreen() {
     showToast,
     readStories = [],     // List of finished story IDs
     completeStory,    // Function in GameContext to mark a story as finished
+
+    // Custom stories
+    customStories = [],
+
+    // Speech variables
+    isSpeechSupported,
+    isListeningSpeech,
+    startListeningSpeech,
+    stopListeningSpeech,
+    updateQuestProgress
   } = useGame();
+
+  const [correctSpokenWords, setCorrectSpokenWords] = useState([]);
 
   const [activeStory, setActiveStory] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -210,10 +222,41 @@ export default function StoryScreen() {
     const translation = activeStory.pages[currentPage].wordsVi[cleanWord] || "từ vựng";
     setTooltipText(translation);
 
-    // Auto clear tooltip after 3 seconds
+    // Auto clear tooltip after 8 seconds
     setTimeout(() => {
       setActiveTooltipWord(null);
-    }, 3000);
+    }, 8000);
+  };
+
+  const handleSpeechWordClick = (cleanWord, event) => {
+    event.stopPropagation();
+    if (isListeningSpeech) {
+      if (stopListeningSpeech) stopListeningSpeech();
+      return;
+    }
+
+    if (startListeningSpeech) {
+      startListeningSpeech(
+        cleanWord,
+        (spokenText) => {
+          beep('good');
+          showToast(`Bé đọc từ này giỏi quá! "${spokenText}" 🎙️🌟`, "good");
+          
+          // Bonus reward: +5 Stars, +2 Coins!
+          addStarsAndCoins(5, 2, true);
+          
+          // Add to correct spoken words
+          setCorrectSpokenWords(prev => [...prev, cleanWord]);
+          
+          // Clear tooltip
+          setActiveTooltipWord(null);
+        },
+        (spokenText) => {
+          beep('bad');
+          showToast(`Bé đọc chưa đúng từ "${cleanWord}". Hãy thử lại nhé! Bé nói: "${spokenText}"`, "bad");
+        }
+      );
+    }
   };
 
   // Speak the entire page sentence
@@ -261,6 +304,7 @@ export default function StoryScreen() {
     beep('win');
     addStarsAndCoins(25, 10, true); // Reward: 25 Stars, 10 Coins
     completeStory(activeStory.id);
+    if (updateQuestProgress) updateQuestProgress('story', 1);
     
     setShowTreasureClaim(false);
     setActiveStory(null);
@@ -271,7 +315,8 @@ export default function StoryScreen() {
   const categoryGradients = {
     "Ngụ Ngôn 🎭": "linear-gradient(135deg, #a8c0ff, #3f2b96)",
     "Bài Học Cuộc Sống 🌱": "linear-gradient(135deg, #11998e, #38ef7d)",
-    "Cổ Tích VN 🌾": "linear-gradient(135deg, #f857a6, #ff5858)"
+    "Cổ Tích VN 🌾": "linear-gradient(135deg, #f857a6, #ff5858)",
+    "Khoa Học Kỳ Thú 🚀": "linear-gradient(135deg, #00c6ff, #0072ff)"
   };
 
   if (!currentProfile) return null;
@@ -302,7 +347,7 @@ export default function StoryScreen() {
             <div>
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-soft)' }}>Học bạ đọc truyện</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--c-purple)', marginTop: '2px' }}>
-                🏆 Bé đã đọc: {readStories.length}/{STORIES_DATABASE.length} truyện
+                🏆 Bé đã đọc: {readStories.length}/{STORIES_DATABASE.length + customStories.length} truyện
               </div>
             </div>
             <div style={{
@@ -357,7 +402,8 @@ export default function StoryScreen() {
           {/* Stories Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
             {(() => {
-              const filtered = STORIES_DATABASE.filter(story => {
+              const allStories = [...STORIES_DATABASE, ...customStories];
+              const filtered = allStories.filter(story => {
                 if (selectedGradeFilter === 'young') return story.gradeLevel.includes('1 - 2');
                 if (selectedGradeFilter === 'older') return story.gradeLevel.includes('3 - 5');
                 return true;
@@ -373,6 +419,7 @@ export default function StoryScreen() {
 
               return filtered.map(story => {
                 const isCompleted = readStories.includes(story.id);
+                const isCustom = story.id.startsWith('story_custom_');
                 const cardBg = categoryGradients[story.category] || "linear-gradient(135deg, #ff9f43, #ff5e36)";
 
                 return (
@@ -390,10 +437,12 @@ export default function StoryScreen() {
                 >
                   {/* Category Pill Tag */}
                   <span style={{
-                    position: 'absolute', top: '10px', right: '10px', background: 'rgba(255,255,255,0.22)',
+                    position: 'absolute', top: '10px', right: '10px', 
+                    background: isCustom ? 'var(--c-purple)' : 'rgba(255,255,255,0.22)',
+                    color: '#fff',
                     fontSize: '0.68rem', padding: '2px 8px', borderRadius: '8px', fontWeight: 800, textTransform: 'uppercase'
                   }}>
-                    {story.category}
+                    {isCustom ? "Tự Tạo 🎨" : story.category}
                   </span>
 
                   {/* Giant Emoji Book Cover */}
@@ -501,6 +550,7 @@ export default function StoryScreen() {
                   const cleanW = word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
                   const isHovered = activeTooltipWord === word;
                   const isSpoken = speakingWordIdx === wordIdx;
+                  const isCorrectSpoken = correctSpokenWords.includes(cleanW);
 
                   let bg = 'transparent';
                   let textColor = 'var(--ink)';
@@ -516,6 +566,11 @@ export default function StoryScreen() {
                     textColor = 'var(--c-purple)';
                     borderB = '2px solid var(--c-purple)';
                     scale = '1.1';
+                  } else if (isCorrectSpoken) {
+                    bg = 'linear-gradient(135deg, #ffd700, #ffb700)';
+                    textColor = '#2a2350';
+                    borderB = 'none';
+                    scale = '1.05';
                   }
 
                   return (
@@ -537,18 +592,44 @@ export default function StoryScreen() {
                       onMouseEnter={(e) => { if(!isHovered) e.currentTarget.style.color = 'var(--c-purple)'; }}
                       onMouseLeave={(e) => { if(!isHovered) e.currentTarget.style.color = 'var(--ink)'; }}
                     >
-                      {word}
+                      {word} {isCorrectSpoken && '⭐'}
 
                       {/* Tap-to-Translate Tooltip popup */}
                       {isHovered && (
                         <span style={{
                           position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
                           background: 'rgba(26,20,54,0.95)', color: '#fff', fontSize: '0.82rem',
-                          padding: '6px 12px', borderRadius: '10px', whiteSpace: 'nowrap', zIndex: 120,
+                          padding: '8px 12px', borderRadius: '10px', whiteSpace: 'nowrap', zIndex: 120,
                           boxShadow: '0 4px 8px rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.15)',
-                          animation: 'popIn 0.2s ease'
+                          animation: 'popIn 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
                         }}>
-                          💡 {tooltipText}
+                          <span>💡 {tooltipText}</span>
+
+                          {isSpeechSupported && (
+                            <button
+                              onClick={(e) => handleSpeechWordClick(cleanW, e)}
+                              style={{
+                                background: isListeningSpeech ? 'var(--c-coral)' : 'var(--c-mint)',
+                                border: 'none',
+                                padding: '2px 6px',
+                                borderRadius: '8px',
+                                color: '#fff',
+                                fontWeight: 800,
+                                fontSize: '0.72rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                cursor: 'pointer',
+                                animation: isListeningSpeech ? 'pulseMic 1.2s infinite' : 'none'
+                              }}
+                            >
+                              <span>🎙️ Tập Đọc</span>
+                            </button>
+                          )}
+
                           {/* Triangle arrow */}
                           <span style={{
                             position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
