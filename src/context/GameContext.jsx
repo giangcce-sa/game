@@ -459,8 +459,35 @@ export const GameProvider = ({ children }) => {
     const stamped = updatedProfiles.map(p =>
       p.id === currentProfile?.id ? { ...p, updatedAt: now } : p
     );
+    profilesRef.current = stamped;
     setProfiles(stamped);
     localStorage.setItem(DB_KEY, JSON.stringify(stamped));
+  };
+
+  // Synchronous mirrors of the latest profile state. Plain setState is async, so
+  // calling several profile mutators in one handler (e.g. game-finish chain) would
+  // each read the same stale closure and clobber each other. commitProfile reads &
+  // writes these refs synchronously so chained updates accumulate instead.
+  const currentProfileRef = useRef(null);
+  const profilesRef = useRef([]);
+  useEffect(() => { currentProfileRef.current = currentProfile; }, [currentProfile]);
+  useEffect(() => { profilesRef.current = profiles; }, [profiles]);
+
+  // Apply mutator to the latest active profile atomically. mutator receives a shallow
+  // copy of the current profile and returns the updated profile (or null to abort).
+  const commitProfile = (mutator) => {
+    const base = currentProfileRef.current;
+    if (!base) return null;
+    const result = mutator({ ...base });
+    if (!result) return null;
+    const stamped = { ...result, updatedAt: new Date().toISOString() };
+    const nextProfiles = (profilesRef.current || []).map(p => p.id === stamped.id ? stamped : p);
+    currentProfileRef.current = stamped;
+    profilesRef.current = nextProfiles;
+    setCurrentProfile(stamped);
+    setProfiles(nextProfiles);
+    try { localStorage.setItem(DB_KEY, JSON.stringify(nextProfiles)); } catch {}
+    return stamped;
   };
 
   // Merge cloud profiles into local state (last-write-wins by updatedAt).
@@ -747,16 +774,9 @@ export const GameProvider = ({ children }) => {
   };
 
   const addStarsAndCoins = (stars, coins, isCorrect = true, extraFields = null) => {
-    if (!currentProfile) return;
+    if (!currentProfileRef.current) return;
 
-    const updated = { ...currentProfile, ...(extraFields || {}) };
-    
-    // Equipped pet stage → coin boost (1.0 / 1.25 / 1.5 / 2.0)
-    const petId = updated.equippedPet;
-    const petFriendshipPoints = (updated.petFriendship && updated.petFriendship[petId]) || 0;
-    const petStage = petId ? getPetStage(petFriendshipPoints) : null;
-
-    // Streak Combo double reward logic
+    // Streak Combo double reward logic (combo state is separate from profile)
     let earnCoins = coins;
     if (isCorrect) {
       const nextCombo = comboCount + 1;
@@ -769,68 +789,71 @@ export const GameProvider = ({ children }) => {
       setComboCount(0);
     }
 
-    if (petStage && petStage.boost > 1.0) {
-      earnCoins = Math.round(earnCoins * petStage.boost);
-      if (petStage.boost >= 2) {
-        showToast(`👑 Linh thú Huyền thoại: NHÂN ĐÔI Xu! 🪙✨`, 'good');
-      } else if (petStage.boost >= 1.5) {
-        showToast(`🌟 Linh thú Trưởng thành: +50% Xu! 🪙`, 'good');
+    commitProfile((updated) => {
+      Object.assign(updated, extraFields || {});
+
+      // Equipped pet stage → coin boost (1.0 / 1.25 / 1.5 / 2.0)
+      const petId = updated.equippedPet;
+      const petFriendshipPoints = (updated.petFriendship && updated.petFriendship[petId]) || 0;
+      const petStage = petId ? getPetStage(petFriendshipPoints) : null;
+
+      let coinsToAdd = earnCoins;
+      if (petStage && petStage.boost > 1.0) {
+        coinsToAdd = Math.round(coinsToAdd * petStage.boost);
+        if (petStage.boost >= 2) {
+          showToast(`👑 Linh thú Huyền thoại: NHÂN ĐÔI Xu! 🪙✨`, 'good');
+        } else if (petStage.boost >= 1.5) {
+          showToast(`🌟 Linh thú Trưởng thành: +50% Xu! 🪙`, 'good');
+        }
       }
-    }
 
-    if (coinBoostRemaining > 0) {
-      earnCoins = earnCoins * 2;
-      showToast(`🎟️ Bùa Nhân Đôi Xu đang hoạt động: Nhân đôi Xu! 🪙✨`, 'good');
-    }
+      if (coinBoostRemaining > 0) {
+        coinsToAdd = coinsToAdd * 2;
+        showToast(`🎟️ Bùa Nhân Đôi Xu đang hoạt động: Nhân đôi Xu! 🪙✨`, 'good');
+      }
 
-    updated.stars += stars;
-    updated.coins += earnCoins;
+      updated.stars += stars;
+      updated.coins += coinsToAdd;
 
-    // Track weekly stars for friend leaderboard
-    const weekKey = currentWeekKey();
-    if (updated.weeklyWeekKey !== weekKey) {
-      updated.weeklyWeekKey = weekKey;
-      updated.weeklyStars = 0;
-    }
-    if (stars > 0) updated.weeklyStars = (updated.weeklyStars || 0) + stars;
+      // Track weekly stars for friend leaderboard
+      const weekKey = currentWeekKey();
+      if (updated.weeklyWeekKey !== weekKey) {
+        updated.weeklyWeekKey = weekKey;
+        updated.weeklyStars = 0;
+      }
+      if (stars > 0) updated.weeklyStars = (updated.weeklyStars || 0) + stars;
 
-    // Badges unlocking
-    if (updated.stars >= 50 && !updated.ownedItems.includes("star50")) {
-      updated.ownedItems.push("star50");
-      showToast("🏆 Nhận Huy Hiệu: Ngôi Sao Sáng! ✨", "good");
-    }
-    if (updated.stars >= 100 && !updated.ownedItems.includes("star100")) {
-      updated.ownedItems.push("star100");
-      showToast("🏆 Nhận Huy Hiệu: Vũ Trụ Sao! 💫", "good");
-    }
-    if (updated.coins >= 200 && !updated.ownedItems.includes("badge_rich")) {
-      updated.ownedItems.push("badge_rich");
-      showToast("🏆 Nhận Huy Hiệu: Nhà Giàu! 💰", "good");
-    }
+      // Badges unlocking
+      if (updated.stars >= 50 && !updated.ownedItems.includes("star50")) {
+        updated.ownedItems = [...updated.ownedItems, "star50"];
+        showToast("🏆 Nhận Huy Hiệu: Ngôi Sao Sáng! ✨", "good");
+      }
+      if (updated.stars >= 100 && !updated.ownedItems.includes("star100")) {
+        updated.ownedItems = [...updated.ownedItems, "star100"];
+        showToast("🏆 Nhận Huy Hiệu: Vũ Trụ Sao! 💫", "good");
+      }
+      if (updated.coins >= 200 && !updated.ownedItems.includes("badge_rich")) {
+        updated.ownedItems = [...updated.ownedItems, "badge_rich"];
+        showToast("🏆 Nhận Huy Hiệu: Nhà Giàu! 💰", "good");
+      }
 
-    setCurrentProfile(updated);
-    const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
-    saveDatabase(updatedProfiles);
+      return updated;
+    });
   };
 
   const updateAnalytics = (topicId, isCorrect) => {
-    if (!currentProfile) return;
-    const analytics = { ...learningAnalytics };
-    if (!analytics[topicId]) {
-      analytics[topicId] = { correct: 0, wrong: 0 };
-    }
-    if (isCorrect) {
-      analytics[topicId].correct += 1;
-    } else {
-      analytics[topicId].wrong += 1;
-    }
-
+    if (!currentProfileRef.current) return;
+    const base = currentProfileRef.current.analytics || {};
+    const prev = base[topicId] || { correct: 0, wrong: 0 };
+    const analytics = {
+      ...base,
+      [topicId]: {
+        correct: prev.correct + (isCorrect ? 1 : 0),
+        wrong: prev.wrong + (isCorrect ? 0 : 1),
+      },
+    };
     setLearningAnalytics(analytics);
-    const updated = { ...currentProfile, analytics };
-    setCurrentProfile(updated);
-
-    const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
-    saveDatabase(updatedProfiles);
+    commitProfile((updated) => { updated.analytics = analytics; return updated; });
   };
 
   const levelUpGame = (gameKey) => {
@@ -856,18 +879,16 @@ export const GameProvider = ({ children }) => {
   // Step-up is already handled in-game via levelUpGame on a perfect run; this
   // adds a gentle step-DOWN when a session goes poorly so kids don't get stuck.
   const autoAdjustLevel = (gameKey, scorePct) => {
-    if (!currentProfile) return;
+    if (!currentProfileRef.current) return;
     const levelKey = getLevelKey(gameKey);
     if (!levelKey) return;
-    const current = currentProfile[levelKey] || 1;
+    const current = currentProfileRef.current[levelKey] || 1;
     const delta = getLevelDelta(scorePct, current);
     if (delta >= 0) return; // step-ups handled elsewhere; nothing to do
     const next = Math.max(1, current + delta);
     if (next === current) return;
-    const updated = { ...currentProfile, [levelKey]: next };
     showToast(`🦉 Cú giảm độ khó một chút để bé luyện vững hơn nhé! (Cấp ${next})`, '');
-    setCurrentProfile(updated);
-    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+    commitProfile((updated) => { updated[levelKey] = next; return updated; });
   };
 
   const buyOrEquipItem = (item) => {
@@ -1006,8 +1027,8 @@ export const GameProvider = ({ children }) => {
 
   // ── A1 Adventure Map ────────────────────────────────────────
   const completeAdventureNode = (nodeId, gameStars = 0) => {
-    if (!currentProfile || !nodeId) return;
-    const adv = currentProfile.adventureProgress || { completedNodes: [], starsByNode: {} };
+    if (!currentProfileRef.current || !nodeId) return;
+    const adv = currentProfileRef.current.adventureProgress || { completedNodes: [], starsByNode: {} };
     const completed = adv.completedNodes || [];
     const alreadyDone = completed.includes(nodeId);
 
@@ -1017,16 +1038,16 @@ export const GameProvider = ({ children }) => {
     if (!newStars[nodeId] || gameStars > newStars[nodeId]) {
       newStars[nodeId] = gameStars;
     }
-    const updated = {
-      ...currentProfile,
-      adventureProgress: {
+    commitProfile((updated) => {
+      // Preserve other adventureProgress fields (e.g. claimedChapters)
+      updated.adventureProgress = {
+        ...adv,
         completedNodes: newCompleted,
         starsByNode: newStars,
         lastNodeId: nodeId,
-      },
-    };
-    setCurrentProfile(updated);
-    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+      };
+      return updated;
+    });
 
     if (!alreadyDone) {
       showToast(`🗺️ Hoàn thành "${nodeId}"! Mở khóa ô tiếp theo.`, 'good');
@@ -1053,7 +1074,7 @@ export const GameProvider = ({ children }) => {
   // ── B4 Phonics Heatmap ──────────────────────────────────────
   // Updates phoneme stats based on word-level pronunciation success
   const recordPronunciation = async (word, success) => {
-    if (!currentProfile || !word) return;
+    if (!currentProfileRef.current || !word) return;
     const cleanWord = word.toLowerCase().trim();
     if (!cleanWord) return;
     let ipa = null;
@@ -1065,15 +1086,20 @@ export const GameProvider = ({ children }) => {
     const phonemes = extractPhonemesFromIpa(ipa);
     if (phonemes.length === 0) return;
 
-    const stats = { ...(currentProfile.phonicsStats || {}) };
-    for (const id of phonemes) {
-      if (!stats[id]) stats[id] = { attempts: 0, success: 0 };
-      stats[id].attempts += 1;
-      if (success) stats[id].success += 1;
-    }
-    const updated = { ...currentProfile, phonicsStats: stats };
-    setCurrentProfile(updated);
-    saveDatabase(profiles.map(p => p.id === updated.id ? updated : p));
+    // commitProfile reads the latest ref at run time, so concurrent per-word
+    // calls accumulate instead of clobbering each other (and don't drop rewards).
+    commitProfile((updated) => {
+      const stats = { ...(updated.phonicsStats || {}) };
+      for (const id of phonemes) {
+        const prev = stats[id] || { attempts: 0, success: 0 };
+        stats[id] = {
+          attempts: prev.attempts + 1,
+          success: prev.success + (success ? 1 : 0),
+        };
+      }
+      updated.phonicsStats = stats;
+      return updated;
+    });
   };
 
   // ── B3 Daily Story Adventure ────────────────────────────────
@@ -1133,77 +1159,71 @@ export const GameProvider = ({ children }) => {
   };
 
   const recordGameFinish = () => {
-    if (!currentProfile) return;
+    if (!currentProfileRef.current) return;
     const today      = new Date().toDateString();
     const yest       = new Date(Date.now() - 86400000).toDateString();
     const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
 
-    const updated = { ...currentProfile };
-
-    // ── 1. Streak bump (only once per calendar day) ──
-    if (updated.lastDay !== today) {
-      if (updated.lastDay === yest) {
-        updated.streak = (updated.streak || 0) + 1;
-      } else if (updated.lastDay === twoDaysAgo && (updated.streakShieldCount || 0) > 0) {
-        // Skipped exactly 1 day — auto-use shield
-        updated.streakShieldCount -= 1;
-        updated.streak = (updated.streak || 0) + 1;
-        showToast(`🛡️ Khiên Streak đã giữ chuỗi học! Còn ${updated.streakShieldCount} khiên.`, 'good');
-      } else {
-        updated.streak = 1;
-      }
-      updated.lastDay = today;
-
-      // Check milestone reward
-      const milestone = getMilestoneToClaim(updated.streak, updated.streakMilestonesClaimed || []);
-      if (milestone) {
-        updated.streakMilestonesClaimed = [...(updated.streakMilestonesClaimed || []), milestone.days];
-        updated.coins += milestone.reward.coins;
-        updated.stars += milestone.reward.stars;
-        if (milestone.reward.shield > 0) {
-          updated.streakShieldCount = (updated.streakShieldCount || 0) + milestone.reward.shield;
+    commitProfile((updated) => {
+      // ── 1. Streak bump (only once per calendar day) ──
+      if (updated.lastDay !== today) {
+        if (updated.lastDay === yest) {
+          updated.streak = (updated.streak || 0) + 1;
+        } else if (updated.lastDay === twoDaysAgo && (updated.streakShieldCount || 0) > 0) {
+          // Skipped exactly 1 day — auto-use shield
+          updated.streakShieldCount -= 1;
+          updated.streak = (updated.streak || 0) + 1;
+          showToast(`🛡️ Khiên Streak đã giữ chuỗi học! Còn ${updated.streakShieldCount} khiên.`, 'good');
+        } else {
+          updated.streak = 1;
         }
-        const shieldMsg = milestone.reward.shield > 0 ? ` + ${milestone.reward.shield} 🛡️` : '';
-        showToast(`🎉 MỐC ${milestone.days} NGÀY: ${milestone.emoji} ${milestone.name}! +${milestone.reward.coins}🪙 +${milestone.reward.stars}⭐${shieldMsg}`, 'good');
-        try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+        updated.lastDay = today;
+
+        // Check milestone reward
+        const milestone = getMilestoneToClaim(updated.streak, updated.streakMilestonesClaimed || []);
+        if (milestone) {
+          updated.streakMilestonesClaimed = [...(updated.streakMilestonesClaimed || []), milestone.days];
+          updated.coins += milestone.reward.coins;
+          updated.stars += milestone.reward.stars;
+          if (milestone.reward.shield > 0) {
+            updated.streakShieldCount = (updated.streakShieldCount || 0) + milestone.reward.shield;
+          }
+          const shieldMsg = milestone.reward.shield > 0 ? ` + ${milestone.reward.shield} 🛡️` : '';
+          showToast(`🎉 MỐC ${milestone.days} NGÀY: ${milestone.emoji} ${milestone.name}! +${milestone.reward.coins}🪙 +${milestone.reward.stars}⭐${shieldMsg}`, 'good');
+          try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+        }
       }
-    }
 
-    // ── 2. Daily mini-streak (3 games → bonus chest) ──
-    if (updated.dailyGamesDate !== today) {
-      updated.dailyGamesDate = today;
-      updated.dailyGamesPlayed = 0;
-      updated.dailyChestClaimed = false;
-    }
-    updated.dailyGamesPlayed = (updated.dailyGamesPlayed || 0) + 1;
+      // ── 2. Daily mini-streak (3 games → bonus chest) ──
+      if (updated.dailyGamesDate !== today) {
+        updated.dailyGamesDate = today;
+        updated.dailyGamesPlayed = 0;
+        updated.dailyChestClaimed = false;
+      }
+      updated.dailyGamesPlayed = (updated.dailyGamesPlayed || 0) + 1;
 
-    if (updated.dailyGamesPlayed >= 3 && !updated.dailyChestClaimed) {
-      updated.dailyChestClaimed = true;
-      updated.coins += 50;
-      updated.stars += 20;
-      showToast('🎁 RƯƠNG NGÀY: 3 game hôm nay! +50 🪙 +20 ⭐', 'good');
-    }
+      if (updated.dailyGamesPlayed >= 3 && !updated.dailyChestClaimed) {
+        updated.dailyChestClaimed = true;
+        updated.coins += 50;
+        updated.stars += 20;
+        showToast('🎁 RƯƠNG NGÀY: 3 game hôm nay! +50 🪙 +20 ⭐', 'good');
+      }
 
-    setCurrentProfile(updated);
-    const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
-    saveDatabase(updatedProfiles);
+      return updated;
+    });
   };
 
   // Primary curriculum action: Complete SGK unit
   const completeUnit = () => {
-    if (!currentProfile) return;
+    if (!currentProfileRef.current) return;
     const unitKey = `${selectedGrade}_u${selectedUnit}`;
-    if (completedUnits.includes(unitKey)) return;
+    const existing = currentProfileRef.current.completedUnits || [];
+    if (existing.includes(unitKey)) return;
 
-    const updatedUnits = [...completedUnits, unitKey];
+    const updatedUnits = [...existing, unitKey];
     setCompletedUnits(updatedUnits);
+    commitProfile((updated) => { updated.completedUnits = updatedUnits; return updated; });
 
-    const updated = { ...currentProfile, completedUnits: updatedUnits };
-    setCurrentProfile(updated);
-
-    const updatedProfiles = profiles.map(p => p.id === updated.id ? updated : p);
-    saveDatabase(updatedProfiles);
-    
     showToast("🏆 Nhận Cúp Bài Học! Xuất sắc bé ơi!", "good");
     beep('win');
   };
