@@ -109,6 +109,12 @@ export const VOCAB = [
   {w:"brother",e:"👦",vi:"anh/em trai",t:"family"},
   {w:"grandma",e:"👵",vi:"bà",t:"family"},
   {w:"grandpa",e:"👴",vi:"ông",t:"family"},
+  {w:"aunt",e:"👩‍🦰",vi:"cô/dì",t:"family"},
+  {w:"uncle",e:"🧔",vi:"chú/bác",t:"family"},
+  {w:"son",e:"👦",vi:"con trai",t:"family"},
+  {w:"daughter",e:"👧",vi:"con gái",t:"family"},
+  {w:"cousin",e:"🧒",vi:"anh chị em họ",t:"family"},
+  {w:"family",e:"👪",vi:"gia đình",t:"family"},
 
   // School 🎒
   {w:"pencil",e:"✏️",vi:"bút chì",t:"school"},
@@ -117,6 +123,12 @@ export const VOCAB = [
   {w:"computer",e:"💻",vi:"máy tính",t:"school"},
   {w:"teacher",e:"👩‍🏫",vi:"cô giáo",t:"school"},
   {w:"school",e:"🏫",vi:"trường học",t:"school"},
+  {w:"book",e:"📕",vi:"quyển sách",t:"school"},
+  {w:"pen",e:"🖊️",vi:"bút mực",t:"school"},
+  {w:"eraser",e:"🧽",vi:"cục tẩy",t:"school"},
+  {w:"notebook",e:"📓",vi:"vở",t:"school"},
+  {w:"desk",e:"🪑",vi:"bàn học",t:"school"},
+  {w:"crayon",e:"🖍️",vi:"bút sáp",t:"school"},
 
   // Weather ☀️
   {w:"sunny",e:"☀️",vi:"nắng",t:"weather"},
@@ -124,6 +136,13 @@ export const VOCAB = [
   {w:"stormy",e:"⛈️",vi:"bão bùng",t:"weather"},
   {w:"hot",e:"🥵",vi:"nóng bức",t:"weather"},
   {w:"cold",e:"🥶",vi:"lạnh giá",t:"weather"},
+  {w:"rainy",e:"🌧️",vi:"mưa",t:"weather"},
+  {w:"cloudy",e:"☁️",vi:"nhiều mây",t:"weather"},
+  {w:"snowy",e:"🌨️",vi:"có tuyết",t:"weather"},
+  {w:"foggy",e:"🌫️",vi:"sương mù",t:"weather"},
+  {w:"rainbow",e:"🌈",vi:"cầu vồng",t:"weather"},
+  {w:"warm",e:"🌤️",vi:"ấm áp",t:"weather"},
+  {w:"thunder",e:"🌩️",vi:"sấm sét",t:"weather"},
 
   // Sports ⚽
   {w:"soccer",e:"⚽",vi:"bóng đá",t:"sports"},
@@ -131,6 +150,13 @@ export const VOCAB = [
   {w:"tennis",e:"🎾",vi:"quần vợt",t:"sports"},
   {w:"runner",e:"🏃",vi:"chạy bộ",t:"sports"},
   {w:"skating",e:"⛸️",vi:"trượt băng",t:"sports"},
+  {w:"basketball",e:"🏀",vi:"bóng rổ",t:"sports"},
+  {w:"volleyball",e:"🏐",vi:"bóng chuyền",t:"sports"},
+  {w:"badminton",e:"🏸",vi:"cầu lông",t:"sports"},
+  {w:"cycling",e:"🚴",vi:"đạp xe",t:"sports"},
+  {w:"boxing",e:"🥊",vi:"quyền anh",t:"sports"},
+  {w:"baseball",e:"⚾",vi:"bóng chày",t:"sports"},
+  {w:"dancing",e:"💃",vi:"khiêu vũ",t:"sports"},
 
   // Clothes 👕
   {w:"shirt",e:"👕",vi:"áo sơ mi",t:"clothes"},
@@ -139,6 +165,12 @@ export const VOCAB = [
   {w:"hat",e:"👒",vi:"mũ",t:"clothes"},
   {w:"shoes",e:"👟",vi:"giày",t:"clothes"},
   {w:"socks",e:"🧦",vi:"tất chân",t:"clothes"},
+  {w:"coat",e:"🧥",vi:"áo khoác",t:"clothes"},
+  {w:"skirt",e:"👚",vi:"váy ngắn",t:"clothes"},
+  {w:"gloves",e:"🧤",vi:"găng tay",t:"clothes"},
+  {w:"scarf",e:"🧣",vi:"khăn quàng",t:"clothes"},
+  {w:"boots",e:"🥾",vi:"giày bốt",t:"clothes"},
+  {w:"jacket",e:"🧥",vi:"áo jacket",t:"clothes"},
 
   // Feelings 😊
   {w:"happy",e:"😊",vi:"vui vẻ",t:"feelings"},
@@ -146,6 +178,13 @@ export const VOCAB = [
   {w:"angry",e:"😠",vi:"tức giận",t:"feelings"},
   {w:"sleepy",e:"😴",vi:"buồn ngủ",t:"feelings"},
   {w:"scared",e:"😱",vi:"sợ hãi",t:"feelings"},
+  {w:"excited",e:"🤩",vi:"phấn khích",t:"feelings"},
+  {w:"shy",e:"😳",vi:"ngại ngùng",t:"feelings"},
+  {w:"surprised",e:"😮",vi:"ngạc nhiên",t:"feelings"},
+  {w:"hungry",e:"🤤",vi:"đói bụng",t:"feelings"},
+  {w:"tired",e:"😫",vi:"mệt mỏi",t:"feelings"},
+  {w:"bored",e:"😑",vi:"chán nản",t:"feelings"},
+  {w:"proud",e:"😌",vi:"tự hào",t:"feelings"},
 
   // Jobs 👮
   {w:"doctor",e:"🧑‍⚕️",vi:"bác sĩ",t:"jobs"},
@@ -154,6 +193,12 @@ export const VOCAB = [
   {w:"chef",e:"🧑‍🍳",vi:"đầu bếp",t:"jobs"},
   {w:"farmer",e:"🧑‍🌾",vi:"nông dân",t:"jobs"},
   {w:"artist",e:"🧑‍🎨",vi:"họa sĩ",t:"jobs"},
+  {w:"teacher",e:"🧑‍🏫",vi:"giáo viên",t:"jobs"},
+  {w:"nurse",e:"🧑‍⚕️",vi:"y tá",t:"jobs"},
+  {w:"firefighter",e:"🧑‍🚒",vi:"lính cứu hỏa",t:"jobs"},
+  {w:"singer",e:"🧑‍🎤",vi:"ca sĩ",t:"jobs"},
+  {w:"driver",e:"🚕",vi:"tài xế",t:"jobs"},
+  {w:"scientist",e:"🧑‍🔬",vi:"nhà khoa học",t:"jobs"},
 
   // Shapes 🔺
   {w:"circle",e:"⭕",vi:"hình tròn",t:"shapes"},
@@ -161,6 +206,11 @@ export const VOCAB = [
   {w:"triangle",e:"🔺",vi:"hình tam giác",t:"shapes"},
   {w:"heart",e:"❤️",vi:"hình trái tim",t:"shapes"},
   {w:"diamond",e:"🔷",vi:"hình thoi",t:"shapes"},
+  {w:"star",e:"⭐",vi:"hình ngôi sao",t:"shapes"},
+  {w:"oval",e:"🥚",vi:"hình bầu dục",t:"shapes"},
+  {w:"rectangle",e:"▭",vi:"hình chữ nhật",t:"shapes"},
+  {w:"cross",e:"➕",vi:"hình chữ thập",t:"shapes"},
+  {w:"moon",e:"🌙",vi:"hình mặt trăng",t:"shapes"},
 ];
 
 export const TOPICS = [
