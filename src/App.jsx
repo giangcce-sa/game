@@ -84,6 +84,7 @@ function AppContent({ userId, onSignOut }) {
 
     // Cloud sync
     mergeCloudProfiles,
+    prepareNewAccount,
 
     // Adaptive difficulty
     autoAdjustLevel,
@@ -92,7 +93,9 @@ function AppContent({ userId, onSignOut }) {
   // Sync profile to Supabase on every change (debounced 2s)
   const { upsertProfileDebounced, loadProfiles, flushOfflineQueue } = useSync(userId);
   useEffect(() => {
-    if (currentProfile && userId) {
+    // Never sync the shared offline default to a cloud account — it would come
+    // back on next login and mask the user's real (or not-yet-created) profile.
+    if (currentProfile && userId && currentProfile.id !== 'p_default') {
       upsertProfileDebounced(currentProfile);
     }
   }, [currentProfile, userId, upsertProfileDebounced]);
@@ -105,10 +108,17 @@ function AppContent({ userId, onSignOut }) {
     let cancelled = false;
     (async () => {
       const cloud = await loadProfiles();
-      if (!cancelled && cloud && cloud.length > 0) mergeCloudProfiles(cloud);
+      if (cancelled) return;
+      if (cloud && cloud.length > 0) {
+        mergeCloudProfiles(cloud);
+      } else {
+        // Signed in but no cloud profile yet → don't fall back to the shared
+        // "Khủng Long" default; send the user to create their own profile.
+        prepareNewAccount();
+      }
     })();
     return () => { cancelled = true; };
-  }, [userId, loadProfiles, mergeCloudProfiles]);
+  }, [userId, loadProfiles, mergeCloudProfiles, prepareNewAccount]);
 
   // Daily reminder check — on mount + every 30 min while app is open
   useEffect(() => {

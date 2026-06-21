@@ -508,6 +508,34 @@ export const GameProvider = ({ children }) => {
     }
   }, []);
 
+  // Signed in with an empty cloud account: drop the shared offline default and
+  // send the user to create their own profile (which gets a unique id + syncs up).
+  const prepareNewAccount = useCallback(() => {
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch {}
+    const real = (local || []).filter(p => p.id !== 'p_default');
+    localStorage.setItem(DB_KEY, JSON.stringify(real));
+    setProfiles(real);
+    if (real.length > 0) {
+      // Returning user on a fresh device with leftover real profiles — activate one.
+      const target = real[0];
+      setCurrentProfile(target);
+      applySkin(target.equippedSkin);
+      setCustomVocab(target.customVocab || []);
+      setLearningAnalytics(target.analytics || {});
+      setCompletedUnits(target.completedUnits || []);
+      setReadStories(target.readStories || []);
+      setSelectedGrade(target.selectedGrade || 'grade3');
+      initializeDailyQuests(target.id);
+      initializeWeeklyChallenge(target.id);
+      setActiveScreen('home');
+    } else {
+      // No profile at all → go create one instead of the shared default.
+      setCurrentProfile(null);
+      setActiveScreen('profiles');
+    }
+  }, []);
+
   const applySkin = (skinId) => {
     // Preserve dark-mode class when changing skin
     const wasDark = document.body.classList.contains('dark-mode');
@@ -1678,6 +1706,7 @@ export const GameProvider = ({ children }) => {
       completeAdventureNode,
       claimChapterReward,
       mergeCloudProfiles,
+      prepareNewAccount,
       autoAdjustLevel,
       setDailyGoal,
       setThemeColor,
