@@ -3,48 +3,58 @@ import { useGame } from '../context/GameContext';
 import CuOwl from '../components/CuOwl';
 
 /* ── Placement test questions ─────────────────────────────────────────── */
-const QUESTIONS = [
-  {
-    id: 1,
-    level: 'A1',
-    emoji: '🍎',
-    question: 'What is this?',
-    options: ['apple', 'orange', 'banana', 'grape'],
-    correctIdx: 0,
-  },
-  {
-    id: 2,
-    level: 'A1',
-    emoji: '🐱',
-    question: 'What is this?',
-    options: ['cat', 'dog', 'bird', 'fish'],
-    correctIdx: 0,
-  },
-  {
-    id: 3,
-    level: 'A2',
-    emoji: '🏫',
-    question: 'She ___ to school every day.',
-    options: ['go', 'goes', 'going', 'went'],
-    correctIdx: 1,
-  },
-  {
-    id: 4,
-    level: 'A2',
-    emoji: '🌡️',
-    question: "The opposite of 'hot' is ___",
-    options: ['cold', 'warm', 'cool', 'freezing'],
-    correctIdx: 0,
-  },
-  {
-    id: 5,
-    level: 'B1',
-    emoji: '📚',
-    question: 'If I ___ you, I would study harder.',
-    options: ['am', 'was', 'were', 'be'],
-    correctIdx: 2,
-  },
+// Pool of placement questions grouped by CEFR level. Each test draws a random
+// subset (2 A1 + 2 A2 + 1 B1) and shuffles option order, so retaking it varies.
+const QUESTION_POOL = [
+  // ── A1 ──────────────────────────────────────────────
+  { level: 'A1', emoji: '🍎', question: 'What is this?', options: ['apple', 'orange', 'banana', 'grape'], correctIdx: 0 },
+  { level: 'A1', emoji: '🐱', question: 'What is this?', options: ['cat', 'dog', 'bird', 'fish'], correctIdx: 0 },
+  { level: 'A1', emoji: '🐶', question: 'What is this?', options: ['dog', 'cow', 'duck', 'frog'], correctIdx: 0 },
+  { level: 'A1', emoji: '☀️', question: 'What is this?', options: ['sun', 'moon', 'star', 'cloud'], correctIdx: 0 },
+  { level: 'A1', emoji: '🍌', question: 'What is this?', options: ['banana', 'apple', 'lemon', 'pear'], correctIdx: 0 },
+  { level: 'A1', emoji: '🚗', question: 'What is this?', options: ['car', 'bus', 'bike', 'train'], correctIdx: 0 },
+  { level: 'A1', emoji: '🏠', question: 'What is this?', options: ['house', 'school', 'shop', 'park'], correctIdx: 0 },
+  { level: 'A1', emoji: '🔵', question: 'What color is this?', options: ['blue', 'red', 'green', 'yellow'], correctIdx: 0 },
+
+  // ── A2 ──────────────────────────────────────────────
+  { level: 'A2', emoji: '🏫', question: 'She ___ to school every day.', options: ['go', 'goes', 'going', 'went'], correctIdx: 1 },
+  { level: 'A2', emoji: '🌡️', question: "The opposite of 'hot' is ___", options: ['cold', 'warm', 'cool', 'freezing'], correctIdx: 0 },
+  { level: 'A2', emoji: '🐦', question: 'There ___ two birds in the tree.', options: ['is', 'are', 'be', 'am'], correctIdx: 1 },
+  { level: 'A2', emoji: '🍽️', question: 'I usually ___ breakfast at 7.', options: ['have', 'has', 'having', 'had'], correctIdx: 0 },
+  { level: 'A2', emoji: '📏', question: "The opposite of 'big' is ___", options: ['small', 'tall', 'long', 'wide'], correctIdx: 0 },
+  { level: 'A2', emoji: '🕐', question: 'What time ___ it?', options: ['is', 'are', 'do', 'does'], correctIdx: 0 },
+  { level: 'A2', emoji: '🐕', question: 'This is my dog. ___ name is Rex.', options: ['Its', "It's", 'His', 'Her'], correctIdx: 0 },
+  { level: 'A2', emoji: '🌧️', question: "The opposite of 'wet' is ___", options: ['dry', 'cold', 'soft', 'clean'], correctIdx: 0 },
+
+  // ── B1 ──────────────────────────────────────────────
+  { level: 'B1', emoji: '📚', question: 'If I ___ you, I would study harder.', options: ['am', 'was', 'were', 'be'], correctIdx: 2 },
+  { level: 'B1', emoji: '✈️', question: 'I ___ to Japan twice.', options: ['have been', 'has been', 'am being', 'was'], correctIdx: 0 },
+  { level: 'B1', emoji: '🎬', question: 'The film ___ by millions of people.', options: ['was watched', 'watched', 'is watching', 'watch'], correctIdx: 0 },
+  { level: 'B1', emoji: '⏳', question: 'She has lived here ___ 2010.', options: ['since', 'for', 'from', 'at'], correctIdx: 0 },
+  { level: 'B1', emoji: '🤔', question: 'He asked me where I ___.', options: ['lived', 'live', 'living', 'do live'], correctIdx: 0 },
+  { level: 'B1', emoji: '☔', question: "If it rains, we ___ stay home.", options: ['will', 'would', 'are', 'did'], correctIdx: 0 },
 ];
+
+// Pick n random items from a list
+function pickRandom(arr, n) {
+  return [...arr].sort(() => 0.5 - Math.random()).slice(0, n);
+}
+
+// Shuffle a question's options and recompute the correct index
+function shuffleOptions(q) {
+  const correctWord = q.options[q.correctIdx];
+  const opts = [...q.options].sort(() => 0.5 - Math.random());
+  return { ...q, options: opts, correctIdx: opts.indexOf(correctWord) };
+}
+
+// Build a fresh 5-question test: 2 A1 + 2 A2 + 1 B1, options shuffled.
+// Distribution kept so scoreToLevel (>=5 B1, >=3 A2, else A1) stays valid.
+function buildQuiz() {
+  const a1 = QUESTION_POOL.filter(q => q.level === 'A1');
+  const a2 = QUESTION_POOL.filter(q => q.level === 'A2');
+  const b1 = QUESTION_POOL.filter(q => q.level === 'B1');
+  return [...pickRandom(a1, 2), ...pickRandom(a2, 2), ...pickRandom(b1, 1)].map(shuffleOptions);
+}
 
 /* ── CEFR level config ────────────────────────────────────────────────── */
 const CEFR_CONFIG = {
@@ -286,6 +296,7 @@ export default function OnboardingScreen() {
   const [tourIdx, setTourIdx] = useState(0);
   const [qIdx, setQIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const [quiz, setQuiz] = useState(() => buildQuiz());
   const [selectedOpt, setSelectedOpt] = useState(null);
   const [locked, setLocked] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -306,7 +317,7 @@ export default function OnboardingScreen() {
     { expr: 'listening', icon: '🔥', title: 'Streak hằng ngày',      desc: 'Học mỗi ngày → cây streak lớn dần, được khiên 🛡️ và phần thưởng to.' },
   ];
 
-  const currentQ = QUESTIONS[qIdx];
+  const currentQ = quiz[qIdx];
 
   /* Speak current word on question change */
   useEffect(() => {
@@ -356,7 +367,7 @@ export default function OnboardingScreen() {
 
     setTimeout(() => {
       const nextIdx = qIdx + 1;
-      if (nextIdx >= QUESTIONS.length) {
+      if (nextIdx >= quiz.length) {
         // move to result
         fadeTransition(() => {
           setStep('result');
@@ -472,10 +483,10 @@ export default function OnboardingScreen() {
               {/* Progress bar */}
               <div style={S.progressRow}>
                 <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--ink-soft)' }}>
-                  Câu {qIdx + 1}/{QUESTIONS.length}
+                  Câu {qIdx + 1}/{quiz.length}
                 </span>
                 <div style={S.progressTrack}>
-                  <div style={S.progressFill(((qIdx) / QUESTIONS.length) * 100)} />
+                  <div style={S.progressFill(((qIdx) / quiz.length) * 100)} />
                 </div>
                 <span style={S.progressLabel}>{score} ⭐</span>
               </div>
@@ -527,14 +538,14 @@ export default function OnboardingScreen() {
 
               {/* Stars earned */}
               <div style={S.stars}>
-                {QUESTIONS.map((_, i) => (
+                {quiz.map((_, i) => (
                   <span key={i}>{i < finalScore ? '⭐' : '☆'}</span>
                 ))}
               </div>
 
               {/* Score pill */}
               <div style={S.scoreRow}>
-                <div style={S.scorePill}>✅ {finalScore}/{QUESTIONS.length} đúng</div>
+                <div style={S.scorePill}>✅ {finalScore}/{quiz.length} đúng</div>
               </div>
 
               {/* CEFR badge */}
@@ -553,6 +564,7 @@ export default function OnboardingScreen() {
                 style={{ marginTop: 10 }}
                 onClick={() => {
                   fadeTransition(() => {
+                    setQuiz(buildQuiz());
                     setStep('test');
                     setQIdx(0);
                     setScore(0);
