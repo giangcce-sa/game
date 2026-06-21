@@ -187,5 +187,11 @@
   {"w":"month","e":"🗓️","vi":"tháng","t":"numbers_time","cefr":"A2","pos":"noun"},
   {"w":"year","e":"🎊","vi":"năm","t":"numbers_time","cefr":"A2","pos":"noun"},
   {"w":"ago","e":"⏪","vi":"trước đây","t":"numbers_time","cefr":"A2","pos":"adverb"},
-  {"w":"soon","e":"⏩","vi":"sắp / sớm thôi","t":"numbers_time","cefr":"A2","pos":"adverb"}
+  {"w":"soon","e":"⏩","vi":"sắp / sớm thôi","t":"numbers_time","cefr":"A2","pos":"adverb"},
+  {"w":"yesterday","e":"📆","vi":"hôm qua","t":"numbers_time","cefr":"A2","pos":"noun"},
+  {"w":"tomorrow","e":"📅","vi":"ngày mai","t":"numbers_time","cefr":"A2","pos":"noun"},
+  {"w":"morning","e":"🌅","vi":"buổi sáng","t":"numbers_time","cefr":"A2","pos":"noun"},
+  {"w":"evening","e":"🌆","vi":"buổi tối","t":"numbers_time","cefr":"A2","pos":"noun"},
+  {"w":"early","e":"🐓","vi":"sớm","t":"numbers_time","cefr":"A2","pos":"adjective"},
+  {"w":"late","e":"🌙","vi":"muộn","t":"numbers_time","cefr":"A2","pos":"adjective"}
 ]
