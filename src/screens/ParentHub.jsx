@@ -11,7 +11,7 @@ import {
   requestNotificationPermission,
 } from '../lib/notifications';
 
-export default function ParentHub() {
+export default function ParentHub({ onSignOut }) {
   const { 
     setActiveScreen, 
     screenTimeLimit, 
@@ -1344,6 +1344,28 @@ export default function ParentHub() {
             </label>
           </div>
         </div>
+
+        {/* 6. ACCOUNT — sign out (only when signed in to a cloud account) */}
+        {onSignOut && (
+          <div style={{ borderTop: '2px solid rgba(0,0,0,0.05)', paddingTop: '20px', marginTop: '20px' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              👤 Tài Khoản
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#6b6391', fontWeight: 600, marginBottom: '14px' }}>
+              Đăng xuất khỏi tài khoản đồng bộ trên thiết bị này. Tiến trình của bé vẫn được lưu trên đám mây.
+            </p>
+            <button
+              onClick={async () => {
+                if (!window.confirm('Phụ huynh có chắc muốn đăng xuất khỏi tài khoản?')) return;
+                try { await onSignOut(); } catch {}
+              }}
+              className="btn-big"
+              style={{ width: '100%', marginTop: 0, padding: '12px 14px', fontSize: '0.92rem', background: 'linear-gradient(135deg,#ef4444,#f97316)', boxShadow: '0 4px 0 #b91c1c' }}
+            >
+              🚪 Đăng Xuất
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

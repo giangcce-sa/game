@@ -60,7 +60,7 @@ function LoadingFallback() {
   );
 }
 
-function AppContent({ userId }) {
+function AppContent({ userId, onSignOut }) {
   const {
     activeScreen,
     setActiveScreen,
@@ -328,7 +328,7 @@ function AppContent({ userId }) {
 
       <Suspense fallback={<LoadingFallback />}>
         {activeScreen === 'store' && <StoreScreen />}
-        {activeScreen === 'parent' && <ParentHub />}
+        {activeScreen === 'parent' && <ParentHub onSignOut={userId ? onSignOut : null} />}
         {activeScreen === 'stories' && <ErrorBoundary onGoHome={handleGoHome}><StoryScreen /></ErrorBoundary>}
         {activeScreen === 'speech_studio' && <ErrorBoundary onGoHome={handleGoHome}><GameSpeechStudio /></ErrorBoundary>}
         {activeScreen === 'pet_room' && <ErrorBoundary onGoHome={handleGoHome}><PetRoomScreen /></ErrorBoundary>}
@@ -429,7 +429,7 @@ function AppContent({ userId }) {
 }
 
 export default function App() {
-  const { session, loading, signUp, signIn } = useAuth();
+  const { session, loading, signUp, signIn, signOut } = useAuth();
   const [skipped, setSkipped] = useState(false);
 
   const handleAuth = async (mode, email, password) => {
@@ -445,7 +445,7 @@ export default function App() {
 
   return (
     <GameProvider>
-      <AppContent userId={session?.user?.id || null} />
+      <AppContent userId={session?.user?.id || null} onSignOut={signOut} />
     </GameProvider>
   );
 }
