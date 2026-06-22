@@ -16,7 +16,8 @@ export default function PetRoomScreen() {
     setActiveScreen,
     buyOrEquipItem,
     feedPet,
-    beep
+    beep,
+    showToast,
   } = useGame();
 
   const [activePet, setActivePet] = useState(null);
@@ -333,49 +334,60 @@ export default function PetRoomScreen() {
           padding: '16px 14px', borderRadius: '24px', boxShadow: 'var(--shadow-sm)', textAlign: 'left'
         }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--c-purple)', margin: '0 0 10px' }}>
-            💼 Danh Sách Thú Cưng Đã Có ({ownedPets.length})
+            📖 Bộ Sưu Tập Thú Cưng ({ownedPets.length}/{MERCHANDISE.pets.length})
           </h3>
 
-          {ownedPets.length === 0 ? (
-            <div style={{ fontSize: '0.82rem', color: 'var(--ink-soft)', fontWeight: 600, padding: '10px 0' }}>
-              Bé chưa mua bạn thú cưng nào. Hãy bảo bố mẹ dắt bé vào **Cửa Hàng** đổi Xu tích lũy để rước Pet nhé! 🦉🛍️
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: '8px' }}>
-              {ownedPets.map(pet => {
-                const isEquipped = currentProfile.equippedPet === pet.id;
-                return (
-                  <button
-                    key={pet.id}
-                    onClick={() => {
-                      beep('sine');
-                      buyOrEquipItem(pet);
-                    }}
-                    style={{
-                      background: isEquipped ? 'rgba(157, 107, 255, 0.08)' : '#fff',
-                      border: isEquipped ? '2px solid var(--c-purple)' : '1px solid rgba(0,0,0,0.06)',
-                      borderRadius: '16px', padding: '8px 4px', display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', gap: '2px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', position: 'relative'
-                    }}
-                  >
-                    <span style={{ fontSize: '2rem' }}>{pet.e}</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: isEquipped ? 'var(--c-purple)' : 'var(--ink-soft)' }}>
-                      {pet.name.split(' ')[0]}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: '8px' }}>
+            {MERCHANDISE.pets.map(pet => {
+              const owned = currentProfile.ownedItems.includes(pet.id);
+              const isEquipped = currentProfile.equippedPet === pet.id;
+              const pts = (currentProfile.petFriendship && currentProfile.petFriendship[pet.id]) || 0;
+              const petStageId = owned ? getPetStage(pts).id : 0;
+              return (
+                <button
+                  key={pet.id}
+                  onClick={() => { beep('sine'); if (owned) buyOrEquipItem(pet); else showToast(`Mở khóa ${pet.name} ở Cửa Hàng với ${pet.price}🪙 nhé! 🛍️`, ''); }}
+                  style={{
+                    background: isEquipped ? 'rgba(157, 107, 255, 0.08)' : owned ? '#fff' : 'rgba(0,0,0,0.04)',
+                    border: isEquipped ? '2px solid var(--c-purple)' : '1px solid rgba(0,0,0,0.06)',
+                    borderRadius: '16px', padding: '8px 4px', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', gap: '2px', cursor: 'pointer', boxShadow: 'var(--shadow-sm)', position: 'relative',
+                    opacity: owned ? 1 : 0.55,
+                  }}
+                >
+                  <span style={{ fontSize: '2rem', filter: owned ? 'none' : 'grayscale(1)' }}>
+                    {owned ? pet.e : '❓'}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: isEquipped ? 'var(--c-purple)' : 'var(--ink-soft)' }}>
+                    {owned ? pet.name.split(' ')[0] : `${pet.price}🪙`}
+                  </span>
+                  {/* evolution pips for owned pets */}
+                  {owned && (
+                    <span style={{ display: 'flex', gap: 2 }}>
+                      {PET_STAGES.map(s => (
+                        <span key={s.id} style={{
+                          width: 5, height: 5, borderRadius: '50%',
+                          background: s.id <= petStageId ? 'var(--c-sun)' : 'rgba(0,0,0,0.12)',
+                        }} />
+                      ))}
                     </span>
-                    {isEquipped && (
-                      <span style={{
-                        position: 'absolute', top: '-4px', right: '-4px', fontSize: '0.62rem',
-                        background: 'var(--c-grass)', color: '#fff', borderRadius: '50%', width: '14px', height: '14px',
-                        display: 'grid', placeItems: 'center', fontWeight: 900
-                      }}>
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                  )}
+                  {!owned && (
+                    <span style={{ position: 'absolute', top: 4, right: 5, fontSize: '0.7rem' }}>🔒</span>
+                  )}
+                  {isEquipped && (
+                    <span style={{
+                      position: 'absolute', top: '-4px', right: '-4px', fontSize: '0.62rem',
+                      background: 'var(--c-grass)', color: '#fff', borderRadius: '50%', width: '14px', height: '14px',
+                      display: 'grid', placeItems: 'center', fontWeight: 900
+                    }}>
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
       </div>

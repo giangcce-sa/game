@@ -822,6 +822,24 @@ export const GameProvider = ({ children }) => {
       updated.stars += stars;
       updated.coins += coinsToAdd;
 
+      // Equipped pet earns friendship from correct answers (free, +1 each).
+      // This is the main "reason to nurture" — pets grow from learning, not just feeding.
+      if (isCorrect && stars > 0 && updated.equippedPet) {
+        if (!updated.petFriendship) updated.petFriendship = {};
+        const petId = updated.equippedPet;
+        const before = updated.petFriendship[petId] || 0;
+        if (before < 100) {
+          const after = Math.min(100, before + 1);
+          updated.petFriendship[petId] = after;
+          if (getPetStage(after).id > getPetStage(before).id) {
+            const ns = getPetStage(after);
+            showToast(`🎉 Linh thú tiến hóa: "${ns.name}"! ${ns.boostLabel || ''}`, 'good');
+            beep('magic');
+            try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+          }
+        }
+      }
+
       // Track weekly stars for friend leaderboard
       const weekKey = currentWeekKey();
       if (updated.weeklyWeekKey !== weekKey) {
