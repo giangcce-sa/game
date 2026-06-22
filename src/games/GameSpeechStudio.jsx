@@ -51,6 +51,8 @@ export default function GameSpeechStudio() {
   const audioChunksRef = useRef([]);
   const recordingStreamRef = useRef(null);
   const playbackAudioRef = useRef(null);
+  const mountedRef = useRef(true);
+  const tipAbortRef = useRef(null);
 
   const activeSentence = STUDIO_SENTENCES[activeSentenceIdx];
 
@@ -102,7 +104,9 @@ export default function GameSpeechStudio() {
       // skipPhonics: we record per-word ourselves below (target here is a full sentence).
       if (isSpeechSupported) {
         const handleTranscript = (transcript) => {
+          if (gotResultRef.current) return; // already scored (fallback or earlier result) — ignore
           gotResultRef.current = true;
+          if (evalTimerRef.current) clearTimeout(evalTimerRef.current);
           const r = scorePronunciation(activeSentence, transcript);
           setResult(r);
           setScore(pctToStars(r.overall));
@@ -150,6 +154,7 @@ export default function GameSpeechStudio() {
     if (evalTimerRef.current) clearTimeout(evalTimerRef.current);
     evalTimerRef.current = setTimeout(() => {
       if (gotResultRef.current) return; // recognizer already scored — nothing to do
+      gotResultRef.current = true; // claim first so a late transcript can't double-reward
       setScore('undetected');
       // Small consolation reward for trying, even when we couldn't hear clearly
       addStarsAndCoins(5, 2, false);
@@ -169,11 +174,15 @@ export default function GameSpeechStudio() {
 
     // Best-effort AI enrichment (text-only endpoint). Never blocks the UI.
     if (!API_BASE) return;
+    if (tipAbortRef.current) tipAbortRef.current.abort();
+    const controller = new AbortController();
+    tipAbortRef.current = controller;
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             messages: [{
               role: 'user',
@@ -199,7 +208,7 @@ export default function GameSpeechStudio() {
           }
         }
         const aiText = acc.trim();
-        if (aiText) setTip({ symbol: ph.symbol, text: aiText, source: 'ai' });
+        if (aiText && mountedRef.current) setTip({ symbol: ph.symbol, text: aiText, source: 'ai' });
       } catch {}
     })();
   };
@@ -228,6 +237,8 @@ export default function GameSpeechStudio() {
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
+      if (tipAbortRef.current) tipAbortRef.current.abort();
       if (evalTimerRef.current) clearTimeout(evalTimerRef.current);
       if (recordingStreamRef.current) {
         recordingStreamRef.current.getTracks().forEach(track => track.stop());

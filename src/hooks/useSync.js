@@ -23,6 +23,8 @@ function toRow(profile, userId) {
 
 export function useSync(userId) {
   const debounceRef = useRef(null);
+  const firstPendingAtRef = useRef(0);
+  const latestProfileRef = useRef(null);
 
   const upsertProfile = useCallback(async (profile) => {
     if (!isSupabaseEnabled() || !userId || !profile?.id) return;
@@ -38,9 +40,27 @@ export function useSync(userId) {
     }
   }, [userId]);
 
+  // Debounce 2s of idle, but force a flush after 10s of continuous activity so
+  // non-stop play (a new profile object every game) still reaches the cloud.
+  const MAX_WAIT_MS = 10000;
   const upsertProfileDebounced = useCallback((profile) => {
+    latestProfileRef.current = profile;
+    const now = Date.now();
+    if (!firstPendingAtRef.current) firstPendingAtRef.current = now;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => upsertProfile(profile), 2000);
+
+    const flush = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      firstPendingAtRef.current = 0;
+      if (latestProfileRef.current) upsertProfile(latestProfileRef.current);
+    };
+
+    if (now - firstPendingAtRef.current >= MAX_WAIT_MS) {
+      flush();
+    } else {
+      debounceRef.current = setTimeout(flush, 2000);
+    }
   }, [upsertProfile]);
 
   // Đọc về toàn bộ profile của user, unwrap cột `data` → mảng profile JS

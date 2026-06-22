@@ -153,11 +153,13 @@ export const GameProvider = ({ children }) => {
           const nextVal = Math.min(q.current + amount, q.target);
           const isCompletedNow = nextVal >= q.target;
           if (isCompletedNow) {
+            // Defer out of the setState updater; addStarsAndCoins is now safe to
+            // stack with the weekly reward (commitProfile accumulates via refs).
             setTimeout(() => {
               addStarsAndCoins(q.rewardStars, q.rewardCoins, true);
               showToast(`🏆 Nhiệm vụ hoàn thành: ${q.text} (+${q.rewardCoins} Xu, +${q.rewardStars} Sao)`, "good");
               beep('win');
-            }, 100);
+            }, 0);
           }
           updated = true;
           return { ...q, current: nextVal, completed: isCompletedNow };
@@ -186,7 +188,7 @@ export const GameProvider = ({ children }) => {
           showToast(`🏅 THỬ THÁCH TUẦN HOÀN THÀNH! +${prev.rewardStars}⭐ +${prev.rewardCoins}🪙`, "good");
           beep('win');
           try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
-        }, 150);
+        }, 0);
       }
       const next = { ...prev, current: nextVal, completed: isCompletedNow };
       localStorage.setItem(`vhta_weekly_${currentProfile.id}_${prev.weekKey}`, JSON.stringify(next));
@@ -1481,12 +1483,13 @@ export const GameProvider = ({ children }) => {
         
         const success = spokenClean === targetClean || spokenClean.includes(targetClean) || targetClean.includes(spokenClean);
         // B4: track per-phoneme pronunciation accuracy.
-        // skipPhonics lets multi-word callers (Speech Studio) record per-word themselves.
+        // skipPhonics lets multi-word callers (Speech Studio) handle phonics AND
+        // quest progress themselves — avoid double-counting the 'speech' quest.
         if (!options.skipPhonics) {
           recordPronunciation(targetWord, success);
         }
         if (success) {
-          updateQuestProgress('speech', 1);
+          if (!options.skipPhonics) updateQuestProgress('speech', 1);
           if (onCorrect) onCorrect(transcript);
         } else {
           if (onIncorrect) onIncorrect(transcript);
