@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { STORIES_DATABASE } from '../context/StoriesDatabase';
 import { ArrowLeft, BookOpen, Volume2, Sparkles, HelpCircle, CheckCircle } from 'lucide-react';
+import { useCelebration, CelebrationLayer } from '../components/Celebration';
 
 export default function StoryScreen() {
   const {
@@ -47,6 +48,9 @@ export default function StoryScreen() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [lockQuizClick, setLockQuizClick] = useState(false);
   const [wrongAnswers, setWrongAnswers] = useState([]);
+  const [shakeOpt, setShakeOpt] = useState(null); // option currently shaking (wrong)
+  const [quizCombo, setQuizCombo] = useState(0);   // consecutive correct answers this quiz
+  const cel = useCelebration();
 
   // Celebration result state
   const [showTreasureClaim, setShowTreasureClaim] = useState(false);
@@ -132,6 +136,7 @@ export default function StoryScreen() {
       // Last page reached! Go to reading comprehension quiz
       setInQuizMode(true);
       setActiveQuestionIdx(0);
+      setQuizCombo(0);
       setSelectedAnswer(null);
       setWrongAnswers([]);
       setLockQuizClick(false);
@@ -182,6 +187,7 @@ export default function StoryScreen() {
         // Last page reached! Unlock reading comprehension quiz
         setInQuizMode(true);
         setActiveQuestionIdx(0);
+        setQuizCombo(0);
         setSelectedAnswer(null);
         setWrongAnswers([]);
         setLockQuizClick(false);
@@ -277,8 +283,12 @@ export default function StoryScreen() {
 
     if (isCorrect) {
       beep('good');
+      const nextCombo = quizCombo + 1;
+      setQuizCombo(nextCombo);
+      cel.fire({ combo: nextCombo });
+      if (nextCombo >= 3) beep('win');
       showToast("Đố vui cực giỏi! Câu trả lời chính xác! 🌟", "good");
-      
+
       setTimeout(() => {
         const nextQ = activeQuestionIdx + 1;
         if (nextQ < activeStory.quiz.length) {
@@ -293,6 +303,9 @@ export default function StoryScreen() {
       }, 1200);
     } else {
       beep('bad');
+      setQuizCombo(0);
+      setShakeOpt(opt);
+      setTimeout(() => setShakeOpt(null), 450);
       showToast("Chưa đúng rồi bé ơi! Bé hãy suy nghĩ lại thử nhé. 🦉", "bad");
       setWrongAnswers(prev => [...prev, opt]);
       setLockQuizClick(false);
@@ -302,6 +315,7 @@ export default function StoryScreen() {
   // Claim final reward and finish story
   const handleClaimReward = () => {
     beep('win');
+    cel.fire({ stars: 25, coins: 10 });
     addStarsAndCoins(25, 10, true); // Reward: 25 Stars, 10 Coins
     completeStory(activeStory.id);
     if (updateQuestProgress) updateQuestProgress('story', 1);
@@ -324,7 +338,8 @@ export default function StoryScreen() {
   try {
     return (
     <div style={{ padding: '16px 12px', color: 'var(--ink)' }}>
-      
+      <CelebrationLayer controller={cel} />
+
       {/* 1. MAIN STORIES LIBRARY SCREEN */}
       {!activeStory && (
         <div>
@@ -786,7 +801,10 @@ export default function StoryScreen() {
                       width: '100%', padding: '14px 18px', fontSize: '1.08rem', fontWeight: 800,
                       background: btnBg, border: btnBorder, boxShadow: btnShadow, color: btnColor,
                       borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      cursor: 'pointer', transition: 'all 0.1s'
+                      cursor: 'pointer', transition: 'all 0.1s',
+                      animation: shakeOpt === opt
+                        ? 'wrongShake 0.4s ease'
+                        : (isSelected && isCorrect ? 'rightShake 0.4s ease' : 'none'),
                     }}
                   >
                     {isWrong ? "❌" : (isSelected && isCorrect ? "✅" : "✨")} {opt}
