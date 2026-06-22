@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { ArrowLeft, Volume2, Coins } from 'lucide-react';
-import { SEED_SHOP, BOOSTS, getSeedById, getGrowthStage, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS } from '../data/garden';
+import { SEED_SHOP, EVENT_SEEDS, BOOSTS, getSeedById, getGrowthStage, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS, isGardenEventActive, getGardenEventLabel } from '../data/garden';
 
 export default function GardenScreen({ onBack }) {
   const {
@@ -212,6 +212,41 @@ export default function GardenScreen({ onBack }) {
               </button>
             </div>
           ))}
+
+          {/* Event seeds */}
+          {(() => {
+            const eventOn = isGardenEventActive();
+            return (
+              <>
+                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: eventOn ? '#ef4444' : 'var(--ink-soft)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {eventOn ? getGardenEventLabel() : '🔒 Hạt Sự Kiện'}
+                  {!eventOn && <span style={{ fontSize: '0.66rem', fontWeight: 700, opacity: 0.8 }}>(mở vào cuối tuần & dịp Thiếu Nhi)</span>}
+                </div>
+                {EVENT_SEEDS.map(seed => (
+                  <div key={seed.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                    background: eventOn ? 'rgba(239,68,68,0.06)' : 'rgba(0,0,0,0.03)',
+                    border: `2px solid ${eventOn ? 'rgba(239,68,68,0.25)' : 'rgba(0,0,0,0.06)'}`,
+                    borderRadius: 16, opacity: eventOn ? 1 : 0.6,
+                  }}>
+                    <span style={{ fontSize: '2rem', filter: eventOn ? 'none' : 'grayscale(0.6)' }}>{seed.e}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 900, fontSize: '0.92rem' }}>{seed.vi} <span style={{ color: 'var(--ink-soft)', fontWeight: 700, fontSize: '0.78rem' }}>({seed.word})</span></div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 700 }}>
+                        Bán được {seed.sellPrice}🪙 • hiếm ✨
+                      </div>
+                    </div>
+                    <button onClick={() => buySeed(seed)} disabled={!eventOn} className="btn-big"
+                      style={{ width: 'auto', padding: '8px 12px', marginTop: 0, fontSize: '0.8rem',
+                        background: eventOn ? 'linear-gradient(135deg,#ef4444,#f59e0b)' : '#cbd5e1',
+                        boxShadow: eventOn ? '0 3px 0 #b91c1c' : 'none', cursor: eventOn ? 'pointer' : 'not-allowed' }}>
+                      {eventOn ? `Mua ${seed.buyPrice}🪙` : '🔒'}
+                    </button>
+                  </div>
+                ))}
+              </>
+            );
+          })()}
 
           {/* Boosts */}
           <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--c-purple)', marginTop: 8 }}>✨ Vật phẩm đặc biệt</div>

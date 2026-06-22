@@ -10,7 +10,7 @@ import { STREAK_MILESTONES, getMilestoneToClaim } from '../lib/streakLevels';
 import { generateFriendCode, isValidFriendCode, currentWeekKey } from '../lib/friendCode';
 import { extractPhonemesFromIpa } from '../lib/phonics';
 import { getLevelKey, getLevelDelta, getWeakTopics, getNextFocusTopic } from '../lib/adaptive';
-import { getSeedById, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS } from '../data/garden';
+import { getSeedById, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS, isGardenEventActive } from '../data/garden';
 
 // Re-export so existing imports from GameContext still work
 export { VOCAB, TOPICS } from '../data/vocab';
@@ -1079,6 +1079,11 @@ export const GameProvider = ({ children }) => {
   // ── Garden mode (Grow a Garden) ─────────────────────────────
   const buySeed = (seed) => {
     if (!currentProfileRef.current || !seed) return false;
+    if (seed.tier === 'event' && !isGardenEventActive()) {
+      showToast('Hạt sự kiện chỉ bán trong dịp đặc biệt! 🎉', 'bad');
+      beep('bad');
+      return false;
+    }
     if ((currentProfileRef.current.coins || 0) < seed.buyPrice) {
       showToast('Bé cần thêm xu để mua hạt này! 🪙', 'bad');
       beep('bad');

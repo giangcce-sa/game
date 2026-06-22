@@ -43,6 +43,24 @@ export function getSeedById(id) {
   return SEED_SHOP.find(s => s.id === id) || EVENT_SEEDS.find(s => s.id === id) || null;
 }
 
+// Garden event window — event seeds are only buyable while active.
+// Active during Children's Day week (Jun 1–7) and on weekends, so kids get
+// regular chances to grab the special seeds.
+export function isGardenEventActive(d = new Date()) {
+  const month = d.getMonth(); // 0-based
+  const day = d.getDate();
+  const dow = d.getDay(); // 0 Sun, 6 Sat
+  if (month === 5 && day >= 1 && day <= 7) return true; // 1–7 June
+  if (dow === 0 || dow === 6) return true; // weekends
+  return false;
+}
+
+// Friendly label for the current event (for the shop banner).
+export function getGardenEventLabel(d = new Date()) {
+  if (d.getMonth() === 5 && d.getDate() <= 7) return '🎉 Sự Kiện Thiếu Nhi';
+  return '🌟 Sự Kiện Cuối Tuần';
+}
+
 export function getGrowthStage(growth) {
   if (growth >= 3) return { e: '🌳', label: 'Chín — Thu hoạch!', ready: true };
   if (growth === 2) return { e: '🌿', label: 'Ra lá xanh' };
