@@ -1129,6 +1129,34 @@ export const GameProvider = ({ children }) => {
     });
   };
 
+  // Use a Magic Water item: instant +1 growth on a plot, no quiz, consumes 1.
+  const useMagicWater = (plotIndex) => {
+    if (!currentProfileRef.current) return false;
+    const g0 = currentProfileRef.current.gardenProgress || {};
+    if ((g0.magicWater || 0) <= 0) {
+      showToast('Bé chưa có Nước Phép! Mua ở cửa hàng nhé 💧✨', 'bad');
+      return false;
+    }
+    const plot = (g0.plots || [])[plotIndex];
+    if (!plot) return false;
+    if (effectiveGrowth(plot) >= GARDEN_MAX_GROWTH) {
+      showToast('Cây này đã chín rồi, thu hoạch thôi! 🧺', '');
+      return false;
+    }
+    commitProfile((updated) => {
+      const g = { ...(updated.gardenProgress || {}) };
+      g.magicWater = Math.max(0, (g.magicWater || 0) - 1);
+      g.plots = [...(g.plots || [])];
+      const p = g.plots[plotIndex];
+      g.plots[plotIndex] = { ...p, waterings: (p.waterings || 0) + 1 };
+      updated.gardenProgress = g;
+      return updated;
+    });
+    beep('magic');
+    showToast('💧✨ Nước Phép giúp cây lớn nhanh hơn!', 'good');
+    return true;
+  };
+
   // Harvest a ripe plant → sell for coins (×2 if a big-fruit boost is active)
   const harvestPlant = (plotIndex) => {
     if (!currentProfileRef.current) return 0;
@@ -1850,6 +1878,7 @@ export const GameProvider = ({ children }) => {
       buySeed,
       plantSeed,
       waterPlant,
+      useMagicWater,
       harvestPlant,
       buyGardenBoost,
       unlockPlot,

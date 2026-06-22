@@ -6,7 +6,7 @@ import { SEED_SHOP, BOOSTS, getSeedById, getGrowthStage, effectiveGrowth, GARDEN
 export default function GardenScreen({ onBack }) {
   const {
     currentProfile, beep, showToast, speak, getCombinedVocab,
-    buySeed, plantSeed, waterPlant, harvestPlant, buyGardenBoost, unlockPlot,
+    buySeed, plantSeed, waterPlant, harvestPlant, buyGardenBoost, unlockPlot, useMagicWater,
   } = useGame();
 
   const [tab, setTab] = useState('garden'); // 'garden' | 'shop'
@@ -25,7 +25,12 @@ export default function GardenScreen({ onBack }) {
   const plots = g.plots || [];
   const inventory = g.inventory || {};
   const unlocked = g.unlockedPlots || 4;
+  const magicWater = g.magicWater || 0;
+  const bigFruit = g.bigFruit || 0;
   const TOTAL_PLOTS = 8;
+
+  // Action sheet for tapping an unripe plant: choose water-by-quiz or magic water
+  const [actionPlot, setActionPlot] = useState(null);
 
   // Build a 3-choice quiz for a seed's word
   const openGate = (mode, seed, plotIndex) => {
@@ -76,7 +81,9 @@ export default function GardenScreen({ onBack }) {
       return;
     }
     const grown = effectiveGrowth(plot);
-    if (grown >= GARDEN_MAX_GROWTH) openGate('harvest', getSeedById(plot.seedId), i);
+    if (grown >= GARDEN_MAX_GROWTH) { openGate('harvest', getSeedById(plot.seedId), i); return; }
+    // Unripe: if the child owns Magic Water, let them choose; otherwise quiz-water directly
+    if (magicWater > 0) { beep('pop'); setActionPlot(i); }
     else openGate('water', getSeedById(plot.seedId), i);
   };
 
@@ -92,6 +99,14 @@ export default function GardenScreen({ onBack }) {
           🪙 {currentProfile.coins}
         </div>
       </div>
+
+      {/* Owned boosts strip */}
+      {(magicWater > 0 || bigFruit > 0) && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, fontSize: '0.78rem', fontWeight: 800 }}>
+          {magicWater > 0 && <span style={{ background: 'rgba(14,165,233,0.1)', padding: '4px 10px', borderRadius: 10 }}>💧✨ Nước Phép ×{magicWater}</span>}
+          {bigFruit > 0 && <span style={{ background: 'rgba(245,158,11,0.12)', padding: '4px 10px', borderRadius: 10 }}>🔍🍎 Bùa x2 ×{bigFruit}</span>}
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
@@ -219,6 +234,37 @@ export default function GardenScreen({ onBack }) {
           ))}
         </div>
       )}
+
+      {/* Action sheet: water by quiz vs magic water */}
+      {actionPlot !== null && (() => {
+        const plot = plots[actionPlot];
+        const seed = plot ? getSeedById(plot.seedId) : null;
+        if (!seed) return null;
+        return (
+          <div className="overlay show" style={{ zIndex: 185, background: 'rgba(26,20,54,0.85)' }}
+            onClick={() => setActionPlot(null)}>
+            <div className="modal" style={{ maxWidth: 360, padding: '22px 18px' }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: '2.6rem', marginBottom: 6 }}>{getGrowthStage(effectiveGrowth(plot)).e}</div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--c-purple)', margin: '0 0 14px' }}>
+                Tưới cho cây {seed.vi} lớn nhanh hơn?
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button className="btn-big" onClick={() => { const i = actionPlot; setActionPlot(null); openGate('water', seed, i); }}
+                  style={{ width: '100%', marginTop: 0, fontSize: '0.9rem', background: 'linear-gradient(135deg,#16a34a,#22c55e)', boxShadow: '0 3px 0 #15803d' }}>
+                  📖 Trả lời từ vựng (miễn phí)
+                </button>
+                <button className="btn-big" onClick={() => { const i = actionPlot; setActionPlot(null); useMagicWater(i); }}
+                  style={{ width: '100%', marginTop: 0, fontSize: '0.9rem', background: 'linear-gradient(135deg,#0ea5e9,#38bdf8)', boxShadow: '0 3px 0 #0369a1' }}>
+                  💧✨ Dùng Nước Phép (×{magicWater})
+                </button>
+                <button className="btn-ghost" onClick={() => setActionPlot(null)} style={{ marginTop: 2, fontSize: '0.82rem' }}>
+                  Để sau
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Vocab gate modal */}
       {gate && (
