@@ -154,33 +154,71 @@ export default function GardenScreen({ onBack }) {
               const grown = plot ? effectiveGrowth(plot) : 0;
               const stage = plot ? getGrowthStage(grown) : null;
               const seed = plot ? getSeedById(plot.seedId) : null;
+              // Plant scales up as it grows; ripe shows the fruit emoji
+              const plantEmoji = plot ? (stage.ready ? seed.e : stage.e) : null;
+              const plantSize = plot ? [0.9, 1.3, 1.8, 2.3][grown] || 1 : 1;
+              const plantAnim = plot
+                ? (stage.ready ? 'gardenRipe 1.8s ease-in-out infinite' : grown > 0 ? 'gardenSway 2.6s ease-in-out infinite' : 'none')
+                : 'none';
               return (
                 <button key={i} onClick={() => handlePlotClick(i)}
                   style={{
                     aspectRatio: '1', borderRadius: 16, cursor: 'pointer',
-                    border: '2px solid rgba(0,0,0,0.08)',
-                    background: locked ? 'rgba(0,0,0,0.06)' : 'linear-gradient(180deg,#d9f99d,#bbf7d0)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 2, position: 'relative', padding: 4,
+                    border: stage?.ready ? '2.5px solid #f59e0b' : '2px solid rgba(0,0,0,0.08)',
+                    background: locked
+                      ? 'rgba(0,0,0,0.06)'
+                      : 'linear-gradient(180deg,#cdeffb 0%,#d9f99d 55%,#a3e635 100%)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end',
+                    position: 'relative', padding: 0, overflow: 'hidden',
+                    boxShadow: stage?.ready ? '0 0 14px rgba(245,158,11,0.45)' : 'none',
                   }}>
                   {locked ? (
-                    <>
+                    <div style={{ flex: 1, display: 'grid', placeItems: 'center', gap: 2, width: '100%' }}>
                       <span style={{ fontSize: '1.6rem' }}>🔒</span>
                       <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--ink-soft)' }}>
                         {PLOT_UNLOCK_COSTS[i]}🪙
                       </span>
-                    </>
+                    </div>
                   ) : plot ? (
                     <>
-                      <span style={{ fontSize: '2rem', animation: stage.ready ? 'bob 2s ease-in-out infinite' : 'none' }}>
-                        {stage.ready ? seed.e : stage.e}
-                      </span>
-                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: stage.ready ? '#16a34a' : 'var(--ink-soft)' }}>
-                        {stage.ready ? 'Thu hoạch!' : `${grown}/3`}
-                      </span>
+                      {/* ripe sparkles */}
+                      {stage.ready && (
+                        <>
+                          <span style={{ position: 'absolute', top: 6, left: 8, fontSize: '0.7rem', animation: 'gardenSparkle 1.4s ease-in-out infinite' }}>✨</span>
+                          <span style={{ position: 'absolute', top: 10, right: 8, fontSize: '0.6rem', animation: 'gardenSparkle 1.4s ease-in-out infinite', animationDelay: '0.5s' }}>⭐</span>
+                        </>
+                      )}
+                      {/* plant */}
+                      <div style={{ flex: 1, display: 'grid', placeItems: 'center', width: '100%', transformOrigin: 'bottom center' }}>
+                        <span style={{
+                          fontSize: `${plantSize}rem`, lineHeight: 1,
+                          transformOrigin: 'bottom center', animation: plantAnim,
+                          transition: 'font-size 0.5s cubic-bezier(.2,.9,.3,1.3)',
+                          filter: 'drop-shadow(0 2px 1px rgba(0,0,0,0.15))',
+                        }}>
+                          {plantEmoji}
+                        </span>
+                      </div>
+                      {/* soil mound */}
+                      <div style={{
+                        width: '100%', height: '22%',
+                        background: 'linear-gradient(180deg,#a16207,#7c3a0a)',
+                        borderTop: '2px solid #ca8a04',
+                      }} />
+                      {/* progress / label overlay */}
+                      <div style={{
+                        position: 'absolute', bottom: 2, left: 0, right: 0,
+                        fontSize: '0.58rem', fontWeight: 900,
+                        color: stage.ready ? '#fff' : 'rgba(255,255,255,0.95)',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                      }}>
+                        {stage.ready ? '🧺 Thu hoạch!' : `${grown}/3 💧`}
+                      </div>
                     </>
                   ) : (
-                    <span style={{ fontSize: '1.4rem', opacity: 0.5 }}>➕</span>
+                    <div style={{ flex: 1, display: 'grid', placeItems: 'center', width: '100%' }}>
+                      <span style={{ fontSize: '1.4rem', opacity: 0.45, animation: 'gardenPulse 2.4s ease-in-out infinite' }}>➕</span>
+                    </div>
                   )}
                 </button>
               );
@@ -189,6 +227,14 @@ export default function GardenScreen({ onBack }) {
           <p style={{ fontSize: '0.72rem', color: 'var(--ink-soft)', fontWeight: 700, marginTop: 12, textAlign: 'center' }}>
             🌱 Chạm luống trống để trồng • 💧 chạm cây để tưới (trả lời đúng từ) • 🧺 cây chín để thu hoạch bán lấy xu
           </p>
+
+          {/* Garden-only keyframes */}
+          <style>{`
+            @keyframes gardenSway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+            @keyframes gardenRipe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-5px) scale(1.08); } }
+            @keyframes gardenSparkle { 0%,100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+            @keyframes gardenPulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.7; } }
+          `}</style>
         </>
       ) : (
         /* SHOP TAB */
