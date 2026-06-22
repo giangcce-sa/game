@@ -767,13 +767,15 @@ export const GameProvider = ({ children }) => {
 
     const updated = {
       ...currentProfile,
-      failedSeeds: updatedSeeds
+      failedSeeds: updatedSeeds,
+      stars: (currentProfile.stars || 0) + 30,
+      coins: (currentProfile.coins || 0) + 15,
     };
 
     const updatedProfiles = profiles.map(p => p.id === currentProfile.id ? updated : p);
     setCurrentProfile(updated);
     saveDatabase(updatedProfiles);
-    
+
     beep('win');
     showToast("Chúc mừng bé đã thu hoạch quả ngọt thành công! 🧺✨ (+30 Sao, +15 Xu)", "good");
   };

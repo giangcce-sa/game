@@ -60,10 +60,10 @@ function ConfettiBurst() {
 }
 
 function CelebrationItem({ burst }) {
-  const { stars, coins, combo } = burst;
+  const { stars, coins, combo, confetti = true } = burst;
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      <ConfettiBurst />
+      {confetti && <ConfettiBurst />}
 
       {/* flying score chips */}
       <div style={{

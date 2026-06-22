@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGame, VOCAB } from '../context/GameContext';
 import { ArrowLeft, Sparkles, Volume2, Heart, Award } from 'lucide-react';
+import { useCelebration, CelebrationLayer } from '../components/Celebration';
 
 export default function GreenhouseScreen({ onBack }) {
   const { 
@@ -19,6 +20,7 @@ export default function GreenhouseScreen({ onBack }) {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [lockQuiz, setLockQuiz] = useState(false);
   const [quizSuccess, setQuizSuccess] = useState(null); // true | false
+  const cel = useCelebration();
 
   if (!currentProfile) return null;
 
@@ -61,6 +63,7 @@ export default function GreenhouseScreen({ onBack }) {
     if (isCorrect) {
       beep('good');
       growSeed(activeQuizSeed.w);
+      cel.fire({});
       showToast("Chính xác! Bé tưới nước giúp cây lớn hơn rồi! 💦🌱", "good");
     } else {
       beep('bad');
@@ -74,7 +77,7 @@ export default function GreenhouseScreen({ onBack }) {
 
   return (
     <div style={{ padding: '16px 12px', color: 'var(--ink)' }}>
-      
+      <CelebrationLayer controller={cel} />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
         <button 
@@ -181,7 +184,7 @@ export default function GreenhouseScreen({ onBack }) {
                 {/* Action button */}
                 {isReady ? (
                   <button
-                    onClick={() => { beep('sine'); harvestSeed(seed.w); }}
+                    onClick={() => { beep('sine'); harvestSeed(seed.w); cel.fire({ stars: 30, coins: 15 }); }}
                     className="btn-big"
                     style={{
                       background: 'linear-gradient(135deg, #ffa500, #ff5e36)',

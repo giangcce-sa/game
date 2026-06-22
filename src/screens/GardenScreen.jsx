@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { ArrowLeft, Volume2, Coins } from 'lucide-react';
 import { SEED_SHOP, EVENT_SEEDS, BOOSTS, getSeedById, getGrowthStage, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS, isGardenEventActive, getGardenEventLabel } from '../data/garden';
+import { useCelebration, CelebrationLayer } from '../components/Celebration';
 
 export default function GardenScreen({ onBack }) {
   const {
@@ -19,6 +20,7 @@ export default function GardenScreen({ onBack }) {
 
   // Vocab gate modal: { mode:'plant'|'harvest'|'water', seed, plotIndex, options, answered }
   const [gate, setGate] = useState(null);
+  const cel = useCelebration();
 
   if (!currentProfile) return null;
   const g = currentProfile.gardenProgress || { plots: [], inventory: {}, unlockedPlots: 4, bigFruit: 0 };
@@ -51,9 +53,12 @@ export default function GardenScreen({ onBack }) {
     if (correct) {
       beep('good');
       setTimeout(() => {
-        if (gate.mode === 'plant') plantSeed(gate.seed.id, gate.plotIndex);
-        else if (gate.mode === 'water') waterPlant(gate.plotIndex);
-        else if (gate.mode === 'harvest') harvestPlant(gate.plotIndex);
+        if (gate.mode === 'plant') { plantSeed(gate.seed.id, gate.plotIndex); cel.fire({}); }
+        else if (gate.mode === 'water') { waterPlant(gate.plotIndex); cel.fire({}); }
+        else if (gate.mode === 'harvest') {
+          const payout = harvestPlant(gate.plotIndex); // also fires global confetti
+          cel.fire({ coins: payout, confetti: false });
+        }
         setGate(null);
       }, 900);
     } else {
@@ -89,6 +94,7 @@ export default function GardenScreen({ onBack }) {
 
   return (
     <div style={{ padding: '16px 12px', color: 'var(--ink)' }}>
+      <CelebrationLayer controller={cel} />
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <button className="back-btn" onClick={() => { beep('sine'); onBack(); }} style={{ margin: 0 }}>←</button>
