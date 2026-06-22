@@ -161,6 +161,29 @@ export default function FeatureCards() {
         </button>
       </div>
 
+      {/* Garden mode — full width */}
+      <div style={{ marginBottom: '18px' }}>
+        <button
+          onClick={() => { beep('sine'); setActiveScreen('garden'); }}
+          className="game-card"
+          style={{
+            background: 'linear-gradient(135deg, #16a34a, #84cc16)',
+            minHeight: '110px', margin: 0, width: '100%', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: '14px',
+            padding: '16px 18px', borderRadius: '24px', border: 'none',
+            boxShadow: '0 6px 0 #15803d, 0 4px 12px rgba(132,204,22,0.3)', cursor: 'pointer'
+          }}
+        >
+          <span style={{ fontSize: '3rem' }}>🌱🪴</span>
+          <div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff' }}>Trồng Cây Kiếm Xu</div>
+            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginTop: '2px', lineHeight: '1.35' }}>
+              Mua hạt, trồng cây, học từ vựng & bán lấy xu 🪙
+            </div>
+          </div>
+        </button>
+      </div>
+
       {/* Chat AI + Story Generator */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '18px' }}>
         <button

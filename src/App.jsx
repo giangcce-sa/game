@@ -11,6 +11,7 @@ const ParentHub             = lazy(() => import('./screens/ParentHub'));
 const StoryScreen           = lazy(() => import('./screens/StoryScreen'));
 const PetRoomScreen         = lazy(() => import('./screens/PetRoomScreen'));
 const GreenhouseScreen      = lazy(() => import('./screens/GreenhouseScreen'));
+const GardenScreen          = lazy(() => import('./screens/GardenScreen'));
 const OnboardingScreen      = lazy(() => import('./screens/OnboardingScreen'));
 const StoryGeneratorScreen  = lazy(() => import('./screens/StoryGeneratorScreen'));
 const AdventureMapScreen    = lazy(() => import('./screens/AdventureMapScreen'));
@@ -343,6 +344,7 @@ function AppContent({ userId, onSignOut }) {
         {activeScreen === 'speech_studio' && <ErrorBoundary onGoHome={handleGoHome}><GameSpeechStudio /></ErrorBoundary>}
         {activeScreen === 'pet_room' && <ErrorBoundary onGoHome={handleGoHome}><PetRoomScreen /></ErrorBoundary>}
         {activeScreen === 'greenhouse' && <ErrorBoundary onGoHome={handleGoHome}><GreenhouseScreen onBack={handleGoHome} /></ErrorBoundary>}
+        {activeScreen === 'garden' && <ErrorBoundary onGoHome={handleGoHome}><GardenScreen onBack={handleGoHome} /></ErrorBoundary>}
         {activeScreen === 'split_vs' && <ErrorBoundary onGoHome={handleGoHome}><GameSplitVS onFinish={handleGameFinish} onBack={handleGoHome} /></ErrorBoundary>}
         {activeScreen === 'flashcard' && <ErrorBoundary onGoHome={handleGoHome}><GameFlashcard onBack={handleGoHome} /></ErrorBoundary>}
         {activeScreen === 'minimal_pairs' && <ErrorBoundary onGoHome={handleGoHome}><GameMinimalPairs onBack={handleGoHome} /></ErrorBoundary>}

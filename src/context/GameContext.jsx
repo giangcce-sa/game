@@ -10,6 +10,7 @@ import { STREAK_MILESTONES, getMilestoneToClaim } from '../lib/streakLevels';
 import { generateFriendCode, isValidFriendCode, currentWeekKey } from '../lib/friendCode';
 import { extractPhonemesFromIpa } from '../lib/phonics';
 import { getLevelKey, getLevelDelta, getWeakTopics, getNextFocusTopic } from '../lib/adaptive';
+import { getSeedById, effectiveGrowth, GARDEN_MAX_GROWTH, PLOT_UNLOCK_COSTS } from '../data/garden';
 
 // Re-export so existing imports from GameContext still work
 export { VOCAB, TOPICS } from '../data/vocab';
@@ -333,6 +334,8 @@ export const GameProvider = ({ children }) => {
     phonicsStats: {},           // { phonemeId: { attempts, success } }
     // A1 Adventure Map — quest progression
     adventureProgress: { completedNodes: [], starsByNode: {}, lastNodeId: null },
+    // Garden mode — Grow a Garden (plots, seed inventory, boosts)
+    gardenProgress: { plots: [], inventory: {}, unlockedPlots: 4, bigFruit: 0 },
   };
 
   // Load profiles from LocalStorage on mount
@@ -1073,7 +1076,123 @@ export const GameProvider = ({ children }) => {
     return true;
   };
 
-  // ── B4 Phonics Heatmap ──────────────────────────────────────
+  // ── Garden mode (Grow a Garden) ─────────────────────────────
+  const buySeed = (seed) => {
+    if (!currentProfileRef.current || !seed) return false;
+    if ((currentProfileRef.current.coins || 0) < seed.buyPrice) {
+      showToast('Bé cần thêm xu để mua hạt này! 🪙', 'bad');
+      beep('bad');
+      return false;
+    }
+    beep('pop');
+    commitProfile((updated) => {
+      updated.coins -= seed.buyPrice;
+      const g = { ...(updated.gardenProgress || {}) };
+      g.inventory = { ...(g.inventory || {}) };
+      g.inventory[seed.id] = (g.inventory[seed.id] || 0) + 1;
+      updated.gardenProgress = g;
+      return updated;
+    });
+    showToast(`Đã mua hạt ${seed.vi}! 🌰`, 'good');
+    return true;
+  };
+
+  // Plant a seed from inventory into a plot (called after the vocab gate passes)
+  const plantSeed = (seedId, plotIndex) => {
+    if (!currentProfileRef.current) return false;
+    const g0 = currentProfileRef.current.gardenProgress || {};
+    if ((g0.inventory?.[seedId] || 0) <= 0) return false;
+    commitProfile((updated) => {
+      const g = { ...(updated.gardenProgress || {}) };
+      g.inventory = { ...(g.inventory || {}) };
+      g.inventory[seedId] = Math.max(0, (g.inventory[seedId] || 0) - 1);
+      g.plots = [...(g.plots || [])];
+      g.plots[plotIndex] = { seedId, plantedAt: Date.now(), waterings: 0 };
+      updated.gardenProgress = g;
+      return updated;
+    });
+    beep('magic');
+    return true;
+  };
+
+  // Water a plant (+1 growth) — called after a correct vocab answer
+  const waterPlant = (plotIndex) => {
+    if (!currentProfileRef.current) return;
+    commitProfile((updated) => {
+      const g = { ...(updated.gardenProgress || {}) };
+      g.plots = [...(g.plots || [])];
+      const plot = g.plots[plotIndex];
+      if (!plot) return updated;
+      g.plots[plotIndex] = { ...plot, waterings: (plot.waterings || 0) + 1 };
+      updated.gardenProgress = g;
+      return updated;
+    });
+  };
+
+  // Harvest a ripe plant → sell for coins (×2 if a big-fruit boost is active)
+  const harvestPlant = (plotIndex) => {
+    if (!currentProfileRef.current) return 0;
+    const g0 = currentProfileRef.current.gardenProgress || {};
+    const plot = (g0.plots || [])[plotIndex];
+    if (!plot) return 0;
+    const seed = getSeedById(plot.seedId);
+    if (!seed || effectiveGrowth(plot) < GARDEN_MAX_GROWTH) return 0;
+
+    const useBoost = (g0.bigFruit || 0) > 0;
+    const payout = seed.sellPrice * (useBoost ? 2 : 1);
+
+    commitProfile((updated) => {
+      const g = { ...(updated.gardenProgress || {}) };
+      g.plots = [...(g.plots || [])];
+      g.plots[plotIndex] = null; // clear plot
+      if (useBoost) g.bigFruit = Math.max(0, (g.bigFruit || 0) - 1);
+      updated.gardenProgress = g;
+      updated.coins += payout;
+      return updated;
+    });
+    beep('win');
+    showToast(`🧺 Thu hoạch ${seed.vi}! +${payout}🪙${useBoost ? ' (x2 Bùa!)' : ''}`, 'good');
+    try { window.dispatchEvent(new Event('cu-confetti')); } catch {}
+    return payout;
+  };
+
+  const buyGardenBoost = (boost) => {
+    if (!currentProfileRef.current || !boost) return false;
+    if ((currentProfileRef.current.coins || 0) < boost.price) {
+      showToast('Bé cần thêm xu! 🪙', 'bad'); beep('bad'); return false;
+    }
+    beep('pop');
+    commitProfile((updated) => {
+      updated.coins -= boost.price;
+      const g = { ...(updated.gardenProgress || {}) };
+      if (boost.id === 'big_fruit') g.bigFruit = (g.bigFruit || 0) + 1;
+      else if (boost.id === 'magic_water') g.magicWater = (g.magicWater || 0) + 1;
+      updated.gardenProgress = g;
+      return updated;
+    });
+    showToast(`Đã mua ${boost.name}! ${boost.e}`, 'good');
+    return true;
+  };
+
+  const unlockPlot = (plotIndex) => {
+    if (!currentProfileRef.current) return false;
+    const cost = PLOT_UNLOCK_COSTS[plotIndex] || 0;
+    if ((currentProfileRef.current.coins || 0) < cost) {
+      showToast('Bé cần thêm xu để mở luống đất! 🪙', 'bad'); beep('bad'); return false;
+    }
+    commitProfile((updated) => {
+      updated.coins -= cost;
+      const g = { ...(updated.gardenProgress || {}) };
+      g.unlockedPlots = Math.max(g.unlockedPlots || 4, plotIndex + 1);
+      updated.gardenProgress = g;
+      return updated;
+    });
+    beep('magic');
+    showToast('🌱 Đã mở luống đất mới!', 'good');
+    return true;
+  };
+
+
   // Updates phoneme stats based on word-level pronunciation success
   const recordPronunciation = async (word, success) => {
     if (!currentProfileRef.current || !word) return;
@@ -1728,6 +1847,12 @@ export const GameProvider = ({ children }) => {
       recordPronunciation,
       completeAdventureNode,
       claimChapterReward,
+      buySeed,
+      plantSeed,
+      waterPlant,
+      harvestPlant,
+      buyGardenBoost,
+      unlockPlot,
       mergeCloudProfiles,
       prepareNewAccount,
       autoAdjustLevel,
