@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGame, TOPICS, MERCHANDISE } from '../context/GameContext';
 import { VIETNAM_CURRICULUM } from '../context/VietnamCurriculum';
-import { Sparkles, Gift, Trophy, Store, Shield, Eye, BookOpen, Lock, Unlock, Heart, Award, Zap } from 'lucide-react';
+import { Sparkles, Gift, Trophy, Shield, Eye, BookOpen, Lock, Unlock, Heart, Award, Zap } from 'lucide-react';
 import FeatureCards from './HomeScreen/FeatureCards';
 import QuestWidget from './HomeScreen/QuestWidget';
 import WeeklyChallengeWidget from './HomeScreen/WeeklyChallengeWidget';
@@ -70,6 +70,7 @@ export default function HomeScreen({ onSelectGame, onOpenChat }) {
 
   // Lucky Wheel states
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [showStoryReader, setShowStoryReader] = useState(false);
   const [showWheelModal, setShowWheelModal] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -291,26 +292,48 @@ export default function HomeScreen({ onSelectGame, onOpenChat }) {
             <span style={{ fontSize: '0.78rem', fontWeight: 900 }}>x2 {Math.floor(coinBoostRemaining/60)}:{String(coinBoostRemaining%60).padStart(2,'0')}</span>
           </div>
         )}
-        <button 
-          className="btn-icon" 
-          onClick={toggleBgm} 
-          style={{ 
-            background: isBgmPlaying ? 'linear-gradient(135deg, var(--c-mint), #1f9c8a)' : '#ddd',
-            boxShadow: isBgmPlaying ? '0 4px 0 #1b9c7a' : '0 4px 0 #bbb',
-            marginRight: '4px',
-            fontSize: '1.1rem'
-          }}
-          title={isBgmPlaying ? "Tắt nhạc nền chuông gió" : "Bật nhạc nền chuông gió"}
-        >
-          {isBgmPlaying ? "🎵" : "🔇"}
-        </button>
-        <button className="btn-icon" onClick={toggleDarkMode} title={isDarkMode ? 'Bật chế độ sáng' : 'Bật chế độ tối'} style={{ fontSize: '1.1rem' }}>
-          {isDarkMode ? '☀️' : '🌙'}
-        </button>
-        <button className="btn-icon" onClick={() => { beep('sine'); setShowFriendsModal(true); }} title="Bạn bè & Bảng xếp hạng" style={{ fontSize: '1.1rem' }}>
-          👯
-        </button>
-        <button className="btn-icon" onClick={() => setActiveScreen('store')} title="Cửa hàng"><Store size={20} /></button>
+        <div style={{ position: 'relative' }}>
+          <button
+            className="btn-icon"
+            onClick={() => { beep('sine'); setShowHeaderMenu(v => !v); }}
+            title="Menu"
+            style={{ fontSize: '1.2rem' }}
+          >
+            {showHeaderMenu ? '✕' : '☰'}
+          </button>
+          {showHeaderMenu && (
+            <>
+              {/* click-away backdrop */}
+              <div
+                onClick={() => setShowHeaderMenu(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+              />
+              <div style={{
+                position: 'absolute', top: '52px', right: 0, zIndex: 50,
+                background: 'var(--paper, #fff)', borderRadius: 16, padding: 6,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.18)', border: '1px solid rgba(0,0,0,0.06)',
+                display: 'flex', flexDirection: 'column', gap: 2, minWidth: 190,
+              }}>
+                <button className="hdr-menu-item" onClick={() => { toggleBgm(); }}>
+                  <span style={{ fontSize: '1.2rem' }}>{isBgmPlaying ? '🎵' : '🔇'}</span>
+                  {isBgmPlaying ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
+                </button>
+                <button className="hdr-menu-item" onClick={() => { toggleDarkMode(); }}>
+                  <span style={{ fontSize: '1.2rem' }}>{isDarkMode ? '☀️' : '🌙'}</span>
+                  {isDarkMode ? 'Chế độ sáng' : 'Chế độ tối'}
+                </button>
+                <button className="hdr-menu-item" onClick={() => { beep('sine'); setShowHeaderMenu(false); setShowFriendsModal(true); }}>
+                  <span style={{ fontSize: '1.2rem' }}>👯</span>
+                  Bạn bè & Xếp hạng
+                </button>
+                <button className="hdr-menu-item" onClick={() => { beep('sine'); setShowHeaderMenu(false); setActiveScreen('store'); }}>
+                  <span style={{ fontSize: '1.2rem' }}>🏪</span>
+                  Cửa hàng
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Hero Mascot */}

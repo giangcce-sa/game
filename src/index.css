@@ -192,6 +192,25 @@ body.theme-space .stat { background: #151130; color: #fff; }
 }
 .btn-icon:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a4fd6; }
 
+.hdr-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
+}
+.hdr-menu-item:active { background: rgba(157,107,255,0.12); }
+body.theme-space .hdr-menu-item { color: #fff; }
+
 /* ============ PROFILE SELECTION / CREATION ============ */
 .profile-box {
   background: var(--card);
